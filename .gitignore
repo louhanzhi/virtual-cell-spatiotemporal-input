@@ -1,0 +1,22 @@
+# OS / 编辑器
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+.vscode/
+.idea/
+
+# 临时与渲染检查产物
+*.tmp
+*.bak
+_render_check.png
+
+# 文献管理工具缓存
+*.bib.bak
+.zotero/
+
+# 注意：本仓库为 private，PDF 原文与速读网页（含内联 base64）有意纳入版本库。
+# 若日后改为 public，请取消下面注释以排除版权材料：
+# 01_literature/papers/
+# 01_literature/speed-reading/**/assets/paper.pdf
+# 01_literature/speed-reading/**/assets/paper-data.js

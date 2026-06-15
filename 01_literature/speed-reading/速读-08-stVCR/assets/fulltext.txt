@@ -1,0 +1,1139 @@
+1 stVCR: Spatiotemporal dynamics of single cells
+
+2
+
+Qiangwei Peng1, Peijie Zhou2*, Tiejun Li1,2*
+
+3
+
+1LMAM and School of Mathematical Sciences, Peking University.
+
+4
+
+2Center for Machine Learning Research, Peking University.
+
+5
+
+*Corresponding author(s). E-mail(s): pjzhou@pku.edu.cn; tieli@pku.edu.cn;
+
+6
+
+Abstract
+
+7
+
+Time-series spatial transcriptome data with single-cell resolution provide an opportunity to
+
+8
+
+study cell differentiation, proliferation and migration in physical space over time. Due to the
+
+9
+
+destructive nature of sequencing, reconstruction of spatiotemporal dynamics from data remains
+
+10
+
+challenging. Especially, the inference of migration in physical space remains a difficult task, as
+
+11
+
+samples obtained at different temporal snapshots might not be in the same coordinate system
+
+12
+
+due to the difference of biological replicates. Here we developed stVCR, a generative deep learn-
+
+13
+
+ing model, which integrates the dynamical optimal transport (OT) with the unbalanced setting,
+
+14
+
+the density matching invariant to rigid body transformations as well as priors to model known
+
+15
+
+biology and preserve spatial structure. stVCR achieves the end-to-end simultaneous recon-
+
+16
+
+struction of continuous cell differentiation, proliferation, physical space migration, and spatial
+
+17
+
+coordinates alignment from spatial transcriptome snapshots. In addition, stVCR allows the
+
+18
+
+interpretable study of complex interactions between cell phenotype transition, spatial migration
+
+19
+
+and proliferation. Through benchmarking on both simulation data and real datasets, we vali-
+
+20
+
+dated the effectiveness and robustness of stVCR and demonstrated its advantages over static
+
+21
+
+OT or linear interpolation methods. We applied stVCR to dissect spatiotemporal dynamics
+
+22
+
+underlying axolotl brain regeneration and 3D Drosophila embryo development.
+
+23 Introduction
+24 The development of a fertilized egg into a complete embryo is a highly complex and important 25 process in biology [1­4]. This process involves intricate interactions between the dynamic regulation 26 of gene expression, cell differentiation, cell division, apoptosis, as well as cell migration within 27 physical space [5, 6]. 28 The advent of spatial transcriptome (ST) technology has allowed obtaining both gene expres29 sion data and spatial coordinates [7­11]. As technology advances, spatial resolution has reached 30 the single-cell or even subcellular level, exemplified by methods such as Stereo-seq [10] and 10x 31 Visium HD [11]. However, due to the destructive nature of sequencing, ST data can only provide 32 snapshots rather than a continuous trajectory. If ST sequencing technology is likened to an ultra33 wide-angle camera, it can take pictures of living organisms but lacks video recording capability. 34 Especially, when sequencing at multiple time points during embryonic development, the result35 ing time-series ST data often come from different biological replicates, therefore yielding multiple 36 unpaired snapshots. 37 Recovering cells' dynamic trajectories from single-cell sequencing data or ST data is a challeng38 ing task. RNA velocity [12] utilizes unspliced/spliced RNA to infer the developmental direction of 39 each cell. This inspired a series of subsequent works using unspliced/spliced RNA to more accu40 rately infer RNA velocity [13­18]. These methods suffer from scale invariance due to the lack of 41 temporal information [19]. Metabolic labeling scRNA-seq introduces temporal information into the 42 data by distinguishing new/old RNA [20­27]. Dynamo [28] designed parameter inference meth43 ods for metabolic labeling scRNA-seq data based on steady-state assumptions and deterministic 44 models, and Storm [29] extended it to be independent of steady-state assumptions and stochastic 45 models. Time-series scRNA-seq data introduces temporal information into the data in another way.
+1
+
+46 Waddington-OT [30] pioneered the use of optimal transport(OT) for modeling time-series scRNA47 seq data, finding the optimal mapping in cells at two adjacent time points. However, it approximates 48 cell proliferation by using growth hallmark genes, which largely depends on the choice of database. 49 Targeted for time-series scRNA data, TrajectoryNet [31] combines dynamical OT [32] and 50 normalizing flows to infer continuous trajectories of cell and takes cell proliferation into account 51 through a separated static OT. MIOFlow [33] follows the geometry by operating in the latent 52 space of an geodesic autoencoder. TIGON [34] uses dynamical unbalanced OT [35] to reconstructs 53 dynamic trajectories and population growth simultaneously. Since the usual scRNA-seq data do 54 not include the spatial coordinates of the cells, these methods have limitations to directly model cell 55 migration in physical space. Some work considers stochastic cellular dynamics, such as FBSDE [36] 56 and PI-SDE [37]. Additionally, DeepRUOT extends even further to the stochastic unbalanced 57 case [38]. 58 The availability of time-series ST data has made it possible to study how cells migrate in physical 59 space. PASTE [39] uses fused Gromov-Wasserstein(GW) OT [40] to align 2D adjacent tissue ST 60 slices to reconstruct the 3D structure of the tissue. Moscot [41] uses a similar fused GW-OT to find 61 the optimal mapping of cells between slices at two adjacent time points, incorporating penalties for 62 unbalanced and entropy regularization and employing a low-rank OT [42] to accommodate larger 63 data sizes. Spateo [43] aligns the spatial coordinates of two adjacent time points by optimal mapping 64 to obtain cell migration velocity and then learns a vector field of continuous spatial coordinates. 65 However, it does not fully address the interplay between gene expression and spatial location, and 66 processes such as cell division and apoptosis. DeST-OT [44] considers how to model cell proliferation 67 in the static OT setting, in particular ST data. TopoVelo [45] uses spatial coordinates to model 68 cellular neighborhoods when inferring usual RNA velocity based on unspliced/spliced RNA, and 69 designs post-processing steps to infer cell migration velocity. STT [46] characterizes multistability 70 in space by integrating unspliced/spliced RNA and ST through a multiscale dynamical model. 71 Reconstructing dynamical trajectories of cell differentiation, proliferation, and migration in 72 physical space simultaneously for time-series ST data is a challenging task. Especially for quanti73 fying the migration in physical space, improper treatment might introduce pseudo movements of 74 cells as the cell coordinates obtained at different temporal snapshots are not in same coordinate 75 system. Analogous to recovering a video from multiple photos, we aim to reconstruct the entire 76 cellular developmental dynamics from multiple unpaired ST snapshots, thus obtaining a contin77 uous spatiotemporal developmental trajectory. To achieve this goal, we developed an algorithm 78 called spatio-temporal Video Cassette Recorder (stVCR), which is a dynamical optimal transport 79 algorithm for resolving the issue of alignment of ST section data and unbalanced populations at 80 different snapshots, and incorporation of biological structure priors in an integrative manner. As 81 the result, stVCR reconstructs the spatiotemporal dynamical process for the considered system 82 from multiple ST snapshots. Furthermore, stVCR also reveals the complex regulatory mechanisms 83 behind the overall cellular dynamics, including how gene expression and spatial location affect each 84 other, and how they affect cell proliferation.
+85 Results
+86 Overview of stVCR
+87 In stVCR, we adopt the dynamical OT formulation as a framework, yet with special treatments for 88 different types of data (Fig. 1A). Specifically, for gene expression counts, we use the Wasserstein OT 89 to model the temporal coupling of distributions (Fig. 1A Left and Methods). For spatial coordinates 90 of cells, since rotations and translations may be involved to prevent a direct comparison of cell 91 coordinates at different instants, we use the rigid-body transformation invariant OT to make the 92 spatial alignment in time (Fig. 1A Middle and Methods). For the number of cells, due to the cell 93 division and apoptosis, we use the unbalanced OT to model the unbalanced populations (Fig. 1A 94 Right and Methods). Additionally, stVCR optionally takes known cell type transition prior (Fig. 95 1B Left) as well as the spatial structure preserving prior for specific cell types (or organs) (Fig. 96 1B) to produce more biologically meaningful results (Methods). We unified all three necessary 97 modules and two optional modules into the form of dynamical OT, allowing us to study how a 98 population of cells changes in gene expression, how they migrate in physical space, and how they 99 divide and apoptose over time (Figure 1A,B,C and Methods). We take the spatial coordinates of 100 cells at the first time point t = t0 as the reference coordinates system, and the state of considered 101 cell group at time t is described by a time-dependent distribution t(x, q), where t depends on the 102 spatial coordinates x  Rds (ds = 2 or 3) of the cells in the reference coordinates system and the 103 gene expression variable q  Rdg after dimensionality reduction. Generally, t is not a probability
+2
+
+104 distribution though we take normalization at t = t0. stVCR finds the optimal rigid rotation matrix 105 Rk and translation vector rk for the coordinate system at time point t = tk except t0, and uses 106 the transport-with-growth PDE
+
+tt +  · ((vt, pt)t) = gtt
+
+(1)
+
+107 to interpolate the empirical density ^(k) and cell number nk of the snapshot spatial transcriptomic
+
+108 data at t = tk after rigid body transformation (Fig. 1C), where vt, pt, and gt are parameterized to
+
+109 be learned by neural networks. In physical meaning, vt = dx/dt describes the migration velocity of
+
+110 cells in physical space, pt = dq/dt describes the RNA velocity of cells in (reduced) gene expression
+
+111 space, and gt  R describes cell proliferation (Fig. 1C, D).
+
+112 stVCR parameterizes the 2D rotation matrix by using rotation angle (or Euler angle for 3D
+
+113 case), and simultaneously finds the optimal rigid body transformations and parameterized dynam-
+
+114 ics by minimizing a total loss composed of dynamics loss, matching loss and optional spatial
+
+115 structure preserving loss
+
+L = LDyn + MchLMch + SSPL(SoSpPt).
+
+(2)
+
+116 The dynamics loss LDyn further contains three parts
+
+LDyn = LSpa + ExpLExp + GroLGro,
+
+(3)
+
+117 promoting the least consumption of kinetic energy of spatial migration and gene expression change, 118 and growth energy, respectively. The matching loss LMch promotes the cell dynamics to match 119 the aligned ST data as well as possible at different time points, and the optional spatial structure 120 preserving loss LS(oSpPt) promotes a stable spatial structure for the the user-specified organ or cell 121 type by encouraging adjacent cells to have similar spatial velocities, thereby preventing arbitrary 122 deformations. (Fig. 1D and Methods). The training process involves OT optimization and inte123 grating ODEs represented by neural networks, which we solve using the POT [47] and torchdiffeq 124 packages [48], respectively. 125 Once we have completed the entire training process to obtain the optimal rigid-body transfor126 mation and parameterized dynamics, we can first apply the optimal rigid-body transformation to 127 align the spatial coordinates of cells at different time points to the reference coordinate system, 128 and then perform a series of downstream analyses (Fig. 1E and Methods): (1) Interpolation and 129 prediction. We evolve forward or backward from the nearest observations to the interested time 130 point (between observations or in the future) based on learned cellular dynamics (Fig. 1E Top 131 left and Methods). (2) Gene-space interactions. We study cell-specific gene-gene, gene-space and 132 space-space interactions by calculating the Jacobian matrices of learned spatial migration dynam133 ics and gene expression dynamics and further calculating the directional derivatives along the cell 134 migration direction of interest (Fig. 1E Bottom left and Methods). (3) Proliferation driver genes 135 and migration direction. We study the effects of genes and migration on growth by calculating the 136 gradient of the learned growth dynamics and further calculating the similar directional derivatives 137 (Fig. 1E Top right and Methods). (4) Lineage inference/generation. For originally annotated data, 138 we can infer temporal developmental lineages by learning a time-dependent classifier to annotate 139 unobserved cells generated by interpolation or prediction (Fig. 1E Bottom right and Methods).
+
+3
+
+Fig. 1: Overview of stVCR. A. stVCR adopts dynamical OT framework yet with special treatments for different types of data in the spatial transcriptome. Specifically we use Wasserstein OT for gene expression data (Left), rigid body transformation invariant OT for spatial coordinates (Middle), and unbalanced OT for cell number change due to cell division and apoptosis (Right). B. stVCR can optionally model prior knowledge, including biological priors for known type transitions (Left) and spatial structure preserving priors (Right). C. stVCR unifies the three necessary modules and two optional modules into a dynamical OT. The input spatial transcriptome snapshots are described as distributions (k), and the permissible rotations and translations are characterized by (Rk, rk) at t = tk. The modeling density t is governed by a partial differential equation involving spatial velocity v, RNA velocity p, and growth rate g. D. stVCR solves the problem in B based on deep learning. vt(x, q), pt(x, q) and gt(x, q) are modeled by three neural networks. The loss function includes three parts: dynamics loss, matching loss and spatial structure preserving loss. E. stVCR can perform downstream analyses, including interpolation and prediction (Top left), studying cell-specific gene-gene, gene-space, space-space interactions (Bottom left), exploring the cell-specific effects of gene expression and spatial variations of growth rates (Top right) and inferring temporal cell-type developmental lineages (Bottom right).
+140 Benchmark on the simulated time-series ST data for accuracy, 141 scalability and robustness
+142 To demonstrate the necessity of aligning the spatial coordinates of different temporal snapshots into 143 the same coordinate system, and benchmark the ability of the stVCR to recover spatiotemporal 144 dynamics and reveal key regulatory mechanisms, we generated the simulated dataset of gene circuits 145 and two spatial dimensions (Fig. 2A, B and Methods). The three genes are named Red, Green 146 and Blue genes. There are regulatory relationships between different genes and different spatial 147 coordinates, in addition, gene expression and cell migration also affect cell proliferation (Fig. 2A). 148 Red and Green genes form a toggle switch circuit and they have opposite effects on growth. In 149 addition, the difference in spatial location makes them unequal in status (Fig. 2A, B and Methods).
+4
+
+150 In the simulated dataset, there are three groups of cells at the initial moment (Fig. 2 B). The 151 first group highly expressed gene Blue and was in steady state (Fig. 2 B). The second and third 152 groups had similar low gene expression at the initial moment, but their different spatial locations 153 determined their different fates of transition and growth (Fig. 2B). Without spatial information, 154 it is not possible to distinguish between the second and third group at the initial moment, which 155 would lead to erroneous trajectories (Fig. 2B Left and Fig. S4 last row). If cell proliferation is 156 ignored, it will lead to incorrect cell trajectories of the small number group to the large number 157 group (Fig. 2B Right and Fig. S5 last row). The input data totaled 6 time points, and we rotated 158 the spatial coordinates by different angles to simulate the possible rotation of tissues by spatial 159 transcriptome sequencing (Fig. 2C and Fig. S1A). 160 To illustrate the ability of stVCR to align the spatial coordinates of different temporal snap161 shots and reconstruct the entire spatiotemporal dynamics, we took the data from the first time 162 point and evolved them according to the learned dynamics, demonstrating consistency with real 163 dynamics (Supplementary Video 1; Fig. 2D and Fig. S1B). Specifically, the first group of cells 164 remained virtually unchanged. The second group of cells gradually overexpressed the Red gene, 165 moved outwards in the horizontal direction, and continuously proliferated. The third group of cells 166 gradually overexpressed Green gene and continued apoptosis. In addition, we observed that in the 167 aligned space by stVCR, cells only moved horizontally and did not rotate, indicating that we found 168 the optimal rigid body transformation to align the data at different time points while finding the 169 optimal dynamics of cell evolution (Supplementary Video 1, Fig. 2D and Fig. S1B). In addition, 170 stVCR interpolated the unobserved intermediate moments t = 0.25, 0.75, 1.25, 1.75 and 2.25 and 171 predicted the future moments t = 2.75 based on the learned dynamics, and the results are close to 172 ground truth (Fig. 2E,F and Fig. S1C). 173 To investigate the ability of stVCR to restore the effects of gene interactions, we compared the 174 partial derivatives of Green gene velocity with respect to Red gene expression with ground truth, 175 and visualized them in spatial coordinates (Fig. 2G Left). Qualitatively, they were consistent, and 176 Green gene inhibited Red gene expression mainly in the second and third group of cells. 177 Next, to investigate the ability of stVCR to restore the cell migration effects on gene expression, 178 we calculated the directional derivative of Red gene expression for the given direction n = (1, 0) 179 (i.e., cells moving horizontally to the right) for both learned and true dynamics (Fig. 2G Right). 180 Cells at the right end of the second group moving to the right will promote gene Red expression, 181 and cells at the left end moving to the right will inhibit gene Red expression, which overall suggests 182 that moving horizontally outward in the second group of cells will promote Red expression. 183 To evaluate the spatial variability of cell proliferation and the effect of cell migration on growth, 184 we compared the true and learned cell proliferation rates (Fig. 2H Left). The results show that the 185 first group of cells has a growth rate close to 0, the second group has a large positive growth rate, 186 and the third group has a large negative growth rate. Additionally we calculated the directional 187 derivative of the growth rate g with respect to a given direction n = (1, 0), similarly showing that 188 cells moving outward in the horizontal direction will promote cell proliferation (Fig. 2H Right). 189 Finally, we checked the scalability and the robustness with respect to important hyperparam190 eters of the stVCR. We first performed a scalability analysis, which shows that stVCR is scalable 191 for dataset size, model size, and number of observation times when the proper sample batch size is 192 chosen (Fig. S2). Next, we tested the robustness of stVCR with respect to the important hyperpa193 rameters Mch (Fig. S3 and Supplementary Video 2), Exp (Fig. S4 and Supplementary Video 3), 194 and Gro (Fig. S5 and Supplementary Video 4), where Mch measures the importance of the match195 ing loss, Exp weighs the importance of gene expression and spatial coordinates in the matching 196 term and Gro measures the flexibility of cell proliferation. The results show that stVCR is robust 197 over a wide range of these parameters. 198 In summary, our benchmark tests on this simulated data show that (1) it is necessary to align 199 the spatial coordinates of different time snapshots to the same coordinate system; (2) stVCR simul200 taneously reconstructs cell transition, migration and growth are the keys to reconstructing correct 201 spatiotemporal dynamics; (3) and stVCR can accurately reconstruct key regulatory mechanisms. 202 In addition, stVCR is a scalable and robust algorithm under key hyperparameters tuning.
+5
+
+Fig. 2: Benchmark of stVCR on the simulated time-series ST data. A. Regulation relationship diagram to generate simulation data. B. Dynamic diagram of cell evolution over time. Left: Dynamics of the second group and third group of cells over time in r (red gene expression), g (green gene expression ) and |x| (absolute values of spatial coordinates) dimension. Right: Dynamics of all cells over time in r, g and b (blue gene expression) dimension. C. Input data to stVCR at t = 0.0, 1.0 and 2.5. The color was determined by the expression of three genes Red, Green and Blue. D. The reconstructed results at t = 0.0, 1.0 and 2.5 of cells at t = 0.0 according to learned dynamics using stVCR. E. Results of stVCR interpolation at t = 0.25 and t = 1.25 and comparison with ground truth. Left: ground truth; Right: stVCR. F. Similar to E, but for the results of stVCR prediction at t = 2.75. G. Left: Derivative of Green gene velocity with respect to Red gene on cells at t = 2.5 of true dynamics and learned dynamics. Right: similar to Left, but for derivative of Red with respect to given direction n, where n = (1, 0). H. Left: Growth rates of cells at t = 2.5 of true dynamics and learned dynamics. Right: similar to Left, but for derivative of cell proliferation with respect to given direction n, where n = (1, 0).
+6
+
+203 stVCR reconstructs cell transition and growth dynamics of axolotl brain 204 regeneration
+205 To validate stVCR's capability to learn complex continuous dynamics from spatial snapshots, we 206 next applied stVCR for the axolotl brain regeneration dataset using single-cell Stereo-seq technol207 ogy [49]. The dataset includes brain samples at 2, 5, 10, 15, 20, 30, and 60 days post-injury (DPI) 208 to dissect both immediate wound responses and later regeneration processes. According to the 209 original study [49], the regeneration process is mainly concentrated in 2 DPI to 20 DPI, so we took 210 the data of 5 temporal points at 2, 5, 10, 15 and 20 and reconstructed the dynamic regeneration 211 process using stVCR (Fig. 3, Fig. S6 and Fig. S7). 212 To inspect stVCR's effect in aligning different samples, we demonstrated the aligned coordinate 213 at different time points Fig. 3A and Fig. S6A. stVCR aligns the spatial coordinates of the data 214 collected at different time points to the same coordinate system making them blend well (Fig. 3B). 215 We further compared the spatial coordinates of each time point before and after the stVCR align216 ment (Fig. 3B and Fig. S6B), and observed that at each time point the data were adjusted to 217 varying degrees based on the inferred rigid-body transformation, especially for the 20 DPI data 218 (Fig. 3C). This suggests the necessity of sample alignment to infer dynamics correctly. 219 To further illustrate the continuous dynamics reconstructed, we trained a classifier based on 220 existing cell annotations using a neural network, which allowed us to annotate cells at unobserved 221 time points (Methods). stVCR recovered the gene expression, physical location, possible division 222 and apoptosis, and possible transformation of the cell type of each cell at each moment (Supplemen223 tary Video S5). We visualized the calculated spatial velocity in coordinate space and observed cells 224 in the vicinity of the wound migrating toward the wound when the wound was not yet fully healed, 225 showing a response to injury, especially reactive ependymoglial cell (reaEGC) and microglial cell 226 (MCG) (Fig. 3D). 227 Consistent with cell transition dynamics in response to the injury, we studied the spatial dis228 tribution of cell proliferation rates (Fig. 3E and Fig. S6D), which showed that cell proliferation 229 rates in the injured hemispheres were significantly higher than those in the uninjured hemispheres 230 especially near the wound site (Fig. 3E), implying that cell division was more active in the injured 231 hemispheres. This phenomenon may be due to the need to compensate for cells lost due to injury. 232 In addition, we show the interpolation results at 3.5, 7.5, 12.5 and 17.5 DPI (Fig. 3F and Fig. S6C). 233 To highlight stVCR's function to generate unobserved lineage dynamics, we calculated the 234 number of cells of each type over time based on reconstructed continuous trajectories (Fig. S7A). 235 Interestingly, the inferred number of many types of cells does not simply vary monotonically and 236 linearly outside the observed time point. Among the three ependymoglial cell (EGC) types, the 237 number of reaEGC are increasing first and then decreasing, while the population of Wnt+ EGC 238 (wntEGC) and Sfrp+ (sfrpEGC) are decreasing first and followed by increasing trend. Such a trend 239 coincides with the original study [49] which revealed that sfrpEGC and wntEGC are transitioned 240 into reaEGC in the earlier stage of immediate wound responses. In contrast, later reaEGC are 241 transitioned into mature neurons (Fig. S7B). In particular, the number of wntEGC decreased while 242 reaEGC population expanded synchronously from 5DPI to 10DPI (Fig. 3G Top). 243 To better visualize the lineage dynamics inferred by stVCR, we constructed the temporal devel244 opmental lineage of wntEGC from 5DPI to 10DPI, which allowed us to study the transformation 245 of cell types at time periods other than the observed time points (Fig. 3H Top). The results showed 246 that wntEGC were indeed partially transformed into reaEGC. Next we constructed the temporal 247 developmental profile of reaEGC from 15DPI to 20DPI, and the results showed that it transformed 248 into wntEGC and some neurons in intermediate and mature states (Fig. 3H Bottom), which also 249 coincided with the trend of their cell number (Fig. 3G Bottom). In addition, we noticed a rapid 250 increase in the number of immature neuron (IMN) and dorsal palliumexcitatory neuron (dpEX) 251 when the number of regeneration intermediate progenitor cell (rIPC)1 and rIPC2 was sharply 252 decreasing (Fig. S7C). Therefore, we constructed temporal developmental lineages of rIPC1 and 253 rIPC2 from 15DPI to 20DPI, and the results showed that rIPC1 were mainly transitioned into 254 IMN and rIPC2 were mainly transitioned into dpEX (Fig. S7D), which is also consistent with the 255 experimental observations [49]. 256 In summary, stVCR describes the complex dynamics of axolotl brain regeneration. In the early 257 wound response phase of an injury, stVCR revealed that sfrpEGC and wntEGC transitioned into 258 reaEGC, and the proliferation of cells in the injured hemisphere became active, especially EGC 259 types in the vicinity of the wound. In addition, reaEGC moved toward the wound. As the wound 260 gradually healed, reaEGC transformed back to wntEGC or differentiated into certain intermediate261 state neurons. Eventually, neurons in the intermediate state are then transitioned into mature 262 neurons to compensate for the loss of mature neurons due to injury.
+7
+
+Fig. 3: stVCR reconstructs spatiotemporal dynamics of axolotl brain regeneration. A. stVCR aligns the spatial coordinates of data at different time points to the same coordinate system. Top 2DPI; Bottom: 15DPI. Cell type annotations come from the original study. dpEX,dorsal palliumexcitatory neuron; IMN, immature neuron; MCG, microglial cell; MSN, medium spiny neuron; nptxEX, Nptx+ lateral pallium excitatory neuron; EGC, ependymoglial cell; reaEGC, reactive EGC; ribEGC, ribosomal EGC; rIPC, regeneration intermediate progenitor cell; sfrpEGC, Sfrp+ EGC; tlNBL, telencephalon neuroblast; VLMC, vascular leptomeningeal cell; wntEGC, Wnt+ EGC. B. Comparison of spatial coordinates of the data for all time points before and after stVCR alignment. Left: Before stVCR. Right: After stVCR. C. Comparison of spatial coordinates of 20 DPI data before and after alignment. D. stVCR inferred spatial cell migration velocity at 2DPI and 5DPI injured hemispheres. Left: Streamline plot; Right: Locally amplified grid velocity. E. stVCR inferred cell proliferation rate at 2DPI and 15DPI data. F. stVCR interpolated snapshots at 3.5DPI and 17.5DPI. Cell type annotations come from the stVCR's time-dependent classifier based on the generated continuous gene expression values. G. Changes in cell number over time. Top: reaEGC and wntEGC from 5DPI to 10DPI. Bottom: reaEGC, wntEGC, rIPC4 and tlNBL from 15DPI to 20DPI. H. stVCR reconstructs the time-varying developmental lineages. The number in parentheses is the number of cells. Top: wntEGC from 5DPI to 10DPI; Bottom: reaEGC from 15DPI to 20DPI.
+8
+
+263 Gene-level mechanisms of axolotl brain regeneration revealed by stVCR
+264 stVCR reconstructed the dynamics of axolotl brain regeneration process, in which cell migration 265 and reaEGC proliferation play important roles. To further reveal the mechanism on the gene level, 266 we performed stVCR analysis of these two biological processes based on the learned kinetics, and 267 in addition, reconstructed the regulatory network between key genes (Fig. 4, Fig. S8 and Fig. S9). 268 To infer gene-spatial interactions, we used stVCR to identify the top 100 migration driver genes 269 (Methods). Through Gene Ontology (GO) biological process analysis, we identified several pro270 cesses associated with cell migration (Fig. 4A), including neuron migration and negative regulation 271 of homotypic cell-cell adhesion. Neuron migration is a crucial process for the proper positioning 272 of neurons, while the negative regulation of homotypic cell-cell adhesion facilitates cell movement 273 by reducing cell interactions. Interestingly, several marker genes of EGC-type cells identified in 274 the original study, were included in stVCR's migration driver genes, such as GFAP, TNC, PTN, 275 SLC1A3, GLUD1 and ECM1. We further visualized the migration driver gene score, i.e.  v /qj 276 of four example genes GFAP, TNC, PTN and SLC1A3 (Fig. 4B and Fig. S8A), and showed that 277 they have a promoting effect on cell migration in EGC-type cells. In addition, these genes are 278 indeed highly expressed in EGC-type cells (Fig. 4C and Fig. S8B), especially the GFAP, TNC 279 genes in reaEGC cells (Fig. 4C). 280 Next, we used stVCR to infer cell proliferation driver genes in reaEGC and ranked the results 281 to obtain the top 100 growth-promoting genes (Methods). The GO analysis identified several 282 processes closely related to cell proliferation (Fig. S8C) essential for ribosome biogenesis, protein 283 synthesis, and the proper targeting of proteins. Similar to the migration driver gene results, the 284 growth driver genes inferred by stVCR overlapped with several marker genes for EGCs, such as 285 FABP7 and SFRP1 (Fig. S8E). We visualized the growth driver gene score g/qj of these two 286 example genes (Fig. S8D), and showed that they are significantly promoting cell proliferation and 287 division at EGCs in the injured hemisphere. 288 Finally, to utilize stVCR's function to infer dynamic gene interactions(Methods), we selected 289 some genes (KRT18, ECM1, GFAP, VIM, TNC, S100A10 and HMOX1 ) that were highly expressed 290 in reaEGC (Fig. S9A), and investigated the regulatory relationship between these genes 1) at dif291 ferent time points and 2) in different cell types, and visualized the gene regulatory network (GRN) 292 (Fig. 4D,E and Fig. S9B,C). We observed that in reaEGC these genes inhibit each other at an 293 early stage (2DPI), followed by a gradual weakening of the inhibition (5DPI; 10DPI), and at a 294 later stage (15DPI) they turn to promote each other (Fig. 4D and Fig. S9B). Thus, stVCR analysis 295 suggests that gene regulatory relationships may be changing over time, even in the same cell type, 296 which may be related to the discovery that reaEGC play different roles in early and late stages of 297 injury. In addition, to investigate the gene regulatory relationships as affected by spatial distribu298 tion, we selected wntEGC and sfrpEGC, which are closer to reaEGC, and vascular leptomeningeal 299 cell (VLMC), whereas more apart from reaEGC (Fig. 4E). We recovered the regulatory relation300 ships between these cells at 2DPI at the previously mentioned genes (Fig. 4F and Fig. S9C). The 301 results showed that the regulatory relationships of these genes were close in wntEGC and sfrpEGC, 302 and closer to reaEGC, although there were some minor differences (Fig. 4F Left and Middle). In 303 contrast, the regulatory relationship in VLMC was distinct from reaEGC (Fig. 4F Right). Thus, 304 our results suggest that gene regulatory relationships might also be influenced by cell type and 305 spatial location. 306 In summary, our gene-level mechanism of axolotl brain regeneration datasets demonstrates the 307 ability of the stVCR to (1) find migration-driven and growth-driven genes; and (2) infer time308 dependent and cell type- dependent GRN, suggesting its advantages over static OT-based methods.
+9
+
+Fig. 4: stVCR gene-level analysis of axolotl brain regeneration. A. GO biological process enrichment analysis of the top 100 migration-promoting genes in all cells. B. The partial derivative of the norm of spatial velocity vz with respect to gene expression. Two example genes in A, GFAP (Left) and TNC (Right). C. Violin plots of gene GFAP (Left) and TNC (Right) expression in reaEGC, wntEGC and VLMC cells. D. Gene regulatory networks in reaEGC cells for genes highly expressed in reaEGC. From left to right: 2DPI, 5DPI, 10DPI and 15DPI. E. Spatial distribution of reaEGC, wntEGC, sfrpEGC and VLMC cells at 2 DPI. F. Similar to D, but for sfrpEGC (Left), wntEGC (Middle) and VLMC (Right) cells at 2 DPI.
+309 stVCR analysis of 3D Drosophila embryos and organs with optional prior
+310 To illustrate the necessity of incorporating known biological priors for ST data with sparse temporal 311 observations, we begin with a specially designed simulation dataset for benchmarking (Methods and 312 Supplementary Note 3). The data consists of three types of cells named type 1, type 2, and type 3 313 (Fig. 5A), where type 3 cells express the Red and Green genes moderately and are at steady state. 314 The type 1 cells will first highly express Red and Green genes, gradually decrease the expression 315 of green genes, and migrate over time, transitioning to the type 2 cells that highly express only 316 the Red gene. When there are sufficient observations and the time intervals are small enough, the 317 correct result can be inferred by stVCR without any prior (Fig. S11 and Supplementary Video 318 S8). Indeed, we can theoretically prove that the stVCR reconstructed dynamics will converge to 319 the true dynamics when the sampling time intervals between consecutive observations converge to 320 zero, which provides a rigorous guarantee for the algorithm (Supplementary Note 4). Meanwhile, 321 due to the high cost of ST sequencing, the number of measurement time points is usually fewer
+10
+
+322 and at longer intervals in real experiments. Thus we develop the strategy to allow users to assign 323 known biology priors such as cell state-transition relations and structural continuity of tissues into 324 stVCR (Methods). 325 To show the effects of adding biological priors, we only input two observations at t = 0 and 326 t = 1 (Fig. 5A,C) to stVCR. Without prior knowledge, stVCR would infer the wrong type 1 to 327 type 3 and type 3 to type 2 transitions rather than the correct type 1 to type 2 transition (Fig. 5, 328 Supplementary video S6-S7). In comparison, the interpolation results show that stVCR with a type 329 1 to type 2 state-transition prior is closer to the ground truth at unobserved time points (Fig. 5D 330 and Fig. S10). Overall, the above experimental results illustrate the benefit of adding the correct 331 biological prior into datasets with fewer observations and longer intervals for more accurate results. 332 In order to validate the effectiveness of the strategy of combining biological prior and spatial 333 structure preserving prior on real datasets, we next applied stVCR priors for the 3D Drosophila 334 embryos and organs dataset using single-cell Stereo-seq technology [43]. This datasets include only 335 two time points E7-9h and E9-10h. We set the former moment (E7-9h) in the 3D Drosophila embryo 336 data to t = 8h and the latter moment (E9-10h) to t = 9.5h. The data contains 9 tissues (Fig 5E), 337 and we added biological priors central nervous system (CNS) transition to CNS, midgut transition 338 to midgut, and amnioserosa transition to amnioserosa. Additionally, we added the spatial structure 339 preserving priors for CNS and midgut. We aligned the two observations of data and reconstructed 340 the dynamics between the two moments using the stVCR with the above priors (Supplementary 341 video S9). Fig. 5E shows the aligned 3D Drosophila embryo. We focused on the CNS and midgut 342 (Fig. 5F). We observed that the anterior of the CNS of Drosophila at the latter moment overlapped 343 with the posterior of the CNS at the former moment (Fig. 5F Left), and the midgut consisted of 344 two parts at the former moment and only one part at the latter moment (Fig. 5F Right). 345 To benchmark stVCR with other static OT-based methods and highlight its unique function 346 to model continuous dynamics, we compared the spatial migration dynamic trajectories of CNS 347 reconstructed by stVCR with Spateo [43] and Moscot [41] (Supplementary video S10-S12 and 348 Fig. 5G). Since both Spateo and Moscot are based on static OT and do not directly reconstruct 349 the intermediate process, we obtained the intermediate process by linear interpolation based on 350 the inferred static optimal map. In the spatial trajectory reconstructed by stVCR, the cells in 351 the posterior of CNS gradually migrated to the anterior along the internal structure of the CNS 352 (Supplementary video S10 and Fig. 5G Top row). In Spateo, the cells at the posterior of the 353 CNS were disconnected from the main body and then migrated to the anterior to merge into one 354 part (Supplementary video S11 and Fig. 5G Middle row). One possible explanation is that Spateo 355 is based on static OT and does not constrain the consistency of the intermediate trajectory. In 356 Moscot, cells migrate and aggregate to a few locations (Supplementary video S12 and Fig. 5G 357 Bottom row). We speculate the possible reason is that Moscot tackles the unbalanced OT problem 358 by adding the KL divergence penalty, so that the cells at the first moment correspond to a few 359 cells at the second moment. In addition, we reconstructed the spatial trajectory of midgut using 360 stVCR and compared it with Spateo and Moscot (Supplementary video S13-S15 and Fig. S12). 361 The results showed that both stVCR and Spateo observed that two parts of the midgut at the 362 first moment merged into one part at the later moment (Supplementary video 13-14 and Fig. S11C 363 First two row). In Moscot, the spatial trajectories of midgut migrated and aggregated to a small 364 number of locations similarly to the CNS results. 365 In summary, we demonstrate the theoretical convergence of stVCR in large sample cases through 366 mathematical derivations. We also highlight the benefit of adding known state-transition priors 367 and spatial structure-preserving priors in case of limited observations through computations on 368 simulated data. The application in 3D Drosophila datasets indicates the superiority of stVCR 369 compared to existing methods based on static OT.
+11
+
+Fig. 5: stVCR analysis of 3D Drosophila embryos and organs with biological statetransition prior and spatial structure preserving prior. A. Dynamic diagram of cell evolution over time in simulated data. Longer observation intervals and lack of biological knowledge guidance will result in incorrect type 3 to type 1 and type 2 transitions rather than type 1 to type 2 transitions. B. True dynamics of simulated data. Yellow type 1 cells transition and migrate to become red type 2 cells. Brown cells in the background are in steady state. The color was determined by the expression of three genes Red, Green and Blue. C. Input data to stVCR at only two time points. Left: t = 0.0. Right: t = 1.0. D. Interpolation results at t = 0.5 of stVCR with and without biological prior compared to the ground truth. Left: ground truth. Middle: stVCR without prior. Right: stVCR with prior. E. Spatial coordinates of 3D Drosophila embryos after stVCR alignment. Left: E7-9h. Right: E9-10h. CNS, central nervous system. F. Spatial coordinates of 3D Drosophila organs after stVCR alignment. Left: CNS. Right: Midgut. G. Comparison of spatial migration trajectories of CNS cells. From left to right: E8.0h, E8.3h, E8.6h, E8.9h, E9.2h and E9.5h. From top to bottom: stVCR, Spateo [43] and Moscot [41].
+370 Discussion
+371 Time-series spatial transcriptomics data has made it possible to reconstruct the entire spatiotem372 poral dynamic process of cell fate determination. To dynamically connect unpaired snapshots and 373 align temporal slices from various coordinate systems, we present stVCR to (1) simultaneously 374 reconstruct and continuously generate cell differentiation, migration in physical space as well as 375 division and apoptosis; (2) align spatial coordinates from data collected at different time points 376 and (3) investigate the complex interactions between cell phenotype transitions, spatial migration, 377 and proliferation.
+12
+
+378 Compared to existing methods that reconstruct trajectories from time-series spatial transcrip379 tomics data [41, 43, 44], stVCR employs Rigid body transformation invariant OT, rather than 380 GW-OT, making it the first algorithm to use dynamic OT modeling for time-series spatial tran381 scriptomics data. Additionally, stVCR can model optional known biological priors and spatial 382 structure-preserving priors. Once the entire dynamic process is reconstructed, stVCR can further 383 perform a series of downstream analyses that are not feasible with static OT. 384 stVCR can be improved and extended from several aspects. For instance, learning both the 385 low-dimensional representation of gene expression and the dynamics in the low-dimensional simul386 taneously may yield better results [18]. In addition, integrating ODE represented by neural 387 networks is costly, and some work has attempted to construct simulation-free methods in time388 series single-cell transcriptome data [50], which may also be generalized to spatial transcriptome 389 data. Incorporating more intrinsic dynamics of gene expression (such as transcription, splicing, and 390 degradation) and cellular interactions[51, 52] may yield deeper insights into the realistic biologi391 cal processes. Lastly, integrating other modalities such as lineage information [53] and multi-omics 392 measurements [54] could further enhance the trajectory inference. Due to the limitations of 3D time393 series spatial transcriptome data availability, further applications and performance evaluations on 394 more challenging datasets are needed and will be addressed in future research. 395 Overall, stVCR provides a unified and robust method for generative modeling of time-series 396 spatial transcriptomics data, which reconstructs the entire spatiotemporal processes of single cells 397 from a few given snapshots and investigates the complex space-gene regulatory mechanisms.
+
+398 Methods
+
+399 Basic optimal transport formulation setup
+
+400 In essential aspects, we utilize the dynamical optimal transport (OT) formulation to reconstruct
+
+401 the spatiotemporal dynamics of single cells for snapshot spatial transcriptomics data. Let us first
+
+402 state the basic OT setup for simple case.
+
+403
+
+Let  =
+
+n i=1
+
+ai(x
+
+-
+
+xi)
+
+and
+
+
+
+=
+
+m j=1
+
+bj
+
+(y
+
+-
+
+yj )
+
+be
+
+two
+
+probability
+
+distributions
+
+with
+
+404 normalized positive vectors a = (ai) and b = (bj), where (·) stands for the Dirac's -function.
+
+405 One typically couples  and  (or a and b) through the Kantorovich's OT problem
+
+nm
+
+Lc(, ) = min C, P :=
+
+cij pij ,
+
+(4)
+
+P U (a,b)
+
+i=1 j=1
+
+406 where U (a, b) := P  Rn+×m : P 1m = a and P T1n = b and C = (cij) is the cost matrix. When
+
+407
+
+cij = c(xi, yj) with c(x, y) =
+
+x-y
+
+p p
+
+,
+
+where
+
+x p is the vector
+
+p norm, the p-Wasserstein distance
+
+408 is defined as Wp(, ) = (Lc(, ))1/p. The optimal coupling matrix component pij characterizes
+
+409 the probability that xi will be transported to yj [55].
+
+410
+
+A special case is p = 2, i.e., c(x, y) = x - y 22. In this case, the above OT formulation has an
+
+411 equivalent dynamic form (Benamou-Brenier form [32]) by minimizing the transport kinetic energy
+
+1
+
+W2(, ) 2 = min
+
+vt(x) 2 t(x) dxdt,
+
+(5)
+
+(t(x),vt(x)) 0 Rd
+
+412 where t, vt satisfies the continuity partial differential equation (PDE)
+
+tt(x) +  · (vt(x)t(x))) = 0, such that t=0 = , t=1 = .
+
+(6)
+
+413 The vector field {vt(x)}t[0,1] is to be optimized such that the boundary conditions are satisfied 414 and the minimal kinetic energy is achieved. 415 The dynamic formulation can be generalized to the case when the total mass of  and  are not 416 equal (unbalanced setting). A common approach is to consider the so-called Wasserstein-Fisher-Rao 417 (WFR) distance [35, 56, 57]
+
+1
+
+WFR (, ) 2 =
+
+min
+
+vt(x) 2 +  gt(x) 2 t(x) dxdt,
+
+(7)
+
+(t(x),vt(x),gt(x)) 0 Rd
+
+13
+
+418 where t, vt, gt satisfies the PDE
+
+tt(x) +  · (vt(x)t(x)) = gt(x)t(x), such that t=0 = , t=1 = 
+
+(8)
+
+419 See Supplementary Note 1 for a detailed description of the above algorithm.
+
+420 Data preprocessing
+421 For gene expression count matrix, we first normalized the raw counts data using size factor. Then 422 we selected the top 2000 highly variable genes. Finally, we utilize an Autocoder to project highly 423 variable genes to low dimensions. Specifically, we represent an encoder qemb = fenc(qori, enc) and a 424 decoder q~ori = fdec(qemb, dec) using neural networks, where the input of the encoder is the original 425 gene expression qori and the output is the low-dimensional embedding qemb, and the decoder is the 426 opposite. The loss function is taken as
+
+1N L(enc, dec) = N
+
+qori,i - q~ori,i
+
+2 2
+
+,
+
+(9)
+
+i=1
+
+427 where N refers to the total number of cells. In actual computations, we take the dimension of the 428 low-dimensional embedding qemb to be 10. Also for simplicity of notation, we still use q to refer to 429 qemb to denote the low-dimensional embedding of gene expression unless otherwise stated.
+
+430 Notation conventions in stVCR
+431 We use the notation x = (x1, x2, . . . , xds )  Rds , q = (q1, q2, . . . , qdg )  Rdg for spatial and 432 gene expression variables, respectively. For the considered spatio-temporal transcriptome data, we 433 assume there are nk cells at time t = tk for k = 0, 1, . . . , K. We denote the available datasets by
+
+X(k) = (x1(k), x2(k), . . . , x(nkk))  Rds×nk , Q(k) = (q1(k), q2(k), . . . , qn(kk))  Rdg×nk
+
+(10)
+
+434 at t = tk, where ds is the dimension of the spatial coordinates, usually 2 or 3, and dg is the 435 dimension of the embedded gene expression space (dg = 10 in our setup). In the data analysis, we 436 often need to consider the spatial coordinates after alignment with rigid body transformations at 437 time points t = t1, . . . , tK , which we denote by
+
+X^ (k) = (x^(1k), x^2(k), . . . , x^(nkk)), Q^(k) = Q(k), k = 1, 2, . . . , K.
+
+(11)
+
+438 When only rotation R and translation r are considered, x^(k) = Rx(k) + r. The data (empirical) 439 distribution formed by the dataset (X(k), Q(k)) is denoted by
+
+(k)(x, q)
+
+=
+
+1 nk
+
+nk
+(x - xi(k), q
+i=1
+
+- qi(k)),
+
+(12)
+
+440 where (·) stands for the Dirac's -function in (x, q)-space. Correspondingly, we can define ^(k) for 441 the dataset (X^ (k), Q^(k)) after alignment. Both (k) and ^(k) are probability distributions.
+
+442
+
+We use the notation ft(x, q) or the shorthand ft to denote the time dependence of a function
+
+443 f (x, q, t), while for time dependent coordinates (x(t), q(t)), we use the notation (x(t), q(t)) to be
+
+444 consistent with the notation (X(k), Q(k)). All of the vectors are bold-faced, while the matrices are
+
+445 in normal fonts.
+
+446 Spatial alignment for temporal snapshots
+447 Due to the unknown deformation of the tissue during spatial transcriptome (ST) sequencing, we 448 need to align the spatial coordinates of the ST data at different time points before the subsequent 449 analysis. We assume the large scale deformation of the observed coordinates contains only rigid 450 body transformations (i.e., rotations and translations) in this work. We do not follow the Gromov451 Wasserstein (GW) optimal transport framework for its over-generality and large computational 452 cost. Yet, we adopt the optimal transport approach in [58] by explicitly modeling the set of invariant
+
+14
+
+453 manipulations G, and simultaneously finding the optimal matching of distributions and the optimal 454 transformation through the optimization problem:
+
+(P , g ) = arg min C(g), P
+P U (a,b),gG
+
+MN
+
+d=ef.
+
+pijd xi, g(yj) .
+
+i=1 j=1
+
+(13)
+
+It can be solved by an iterative algorithm
+
+MN
+
+P (n) = arg min
+
+pij d xi, g(n)(yj ) ,
+
+P U (a,b) i=1 j=1
+
+MN
+
+g(n+1) = arg min
+
+p(ijn)d xi, g(yj ) .
+
+gG i=1 j=1
+
+(14) (15)
+
+455 The subproblem (14) is to solve a static OT.
+456 When we take the set G = {(R, r)} as the rigid body transformations, and the distance function 457 d as the Euclidean distance, that is, d(x, y) = x - y 22, the subproblem (15) is a weighted 458 Procrustes problem [59]
+
+(R(n+1), r(n+1)) = arg min
+
+pi(jn)
+
+xi - (Ryj + r)
+
+2 2
+
+,
+
+RRds×ds ,rRds i,j
+
+RT R=I, det R=1
+
+(16)
+
+459 where R refers to a rotation matrix, and r refers to a translation vector. 460 We call this problem rigid body transformation invariant optimal transport, and it explicitly 461 models unknown rigid body transformation, making it possible to compute ground cost functions 462 between distributions at different time points. It can be easily modified to model more general 463 cases, e.g., if affine transformations are allowed in the tissue measuring process.
+
+464 Dynamics loss in stVCR
+
+465 We are concerned with the entire dynamics of cell population evolution and therefore use dynamical
+
+466 optimal transport. Since the number of cell population is constantly changing due to cell division
+
+467 and apoptosis during evolution, unbalanced setting is necessary.
+
+468
+
+stVCR reconstructs t(x, q) by interpolating the input population densities (k) up to a
+
+469 normalization at t = tk using a transport-with-growth PDE
+
+tt(x, q) +  · vt(x, q), pt(x, q) t(x, q) = gt(x, q)t(x, q),
+
+(17)
+
+470 where vt(x, q) refers to the spatial velocity, pt(x, q) refers to the RNA velocity of cells, and gt(x, q) 471 refers to the proliferation rate of cells. We take the coordinate system at t0 as the reference, and 472 assume that the coordinate system at tk (k = 1, 2, . . . , K) differs from the coordinate system at 473 t0 by a rotation Rk and translation rk. Thus the feasible state space S for the arguments under 474 constraints is
+
+S(X(0:K),Q(0:K)) := (t, vt, pt, gt; R1:K , r1:K ) tt +  · ((vt, pt)t) = gtt, (18)
+t0 = (0), tk 1 = nk/n0, ¯tk = ^(k), RkT Rk = I, det Rk = 1, k = 1, 2, . . . , K ,
+
+475 where ^(k) refers to the distribution formed by (X^ (k), Q^(k)) after alignment through rigid body 476 transformation (Rk, rk) at tk, ¯t := t/ t 1 and t 1 := tdxdq is the total mass of t. The 477 notation 0:K is a shorthand for the indices {0, 1, . . . , K}. Same rule applies to similar notations in 478 other places. 479 Borrowing the idea of Wasserstein-Fisher-Rao (WFR) distance for unbalanced optimal trans480 port [34], we obtain the optimal dynamics (t, vt, pt, gt) and the optimal rigid body transformation 481 (Rk, rk) for k = 1, 2, . . . , K by minimizing the kinetic and growth energy
+
+tK
+
+t0
+
+Rdg +ds
+
+vt 2 + Exp pt 2 + Gro gt 2 t(x, q)dxdqdt
+
+(19)
+
+15
+
+482 for (t, vt, pt, gt; R1:K , r1:K )  S(X(0:K), Q(0:K)). Direct derivation of the solution of the Feynman483 Kac type PDE (17) by characteristics [34, 60] shows the above loss function can be rewritten as 484 the following dynamics loss
+
+L = E Dyn
+
+(x(t0 ) ,q (t0 ) )(0)
+
+tK t0
+
+vt(x(t), q(t)) 2 + Exp pt(x(t), q(t)) 2 + Gro gt(x(t), q(t)) 2 wt[x, q]dt,
+
+(20)
+
+485 where x(t), q(t) satisfies the characteristic ordinary differential equations (ODEs)
+
+dx(t) dt
+
+= vt(x(t), q(t)),
+
+dq(t) dt
+
+= pt(x(t), q(t)),
+
+(x(t), q(t))|t=t0 = (x(t0), q(t0))
+
+486
+
+and
+
+the
+
+weights
+
+wt[x, q]
+
+=
+
+e
+
+t t0
+
+gs (x(s) ,q (s) )ds
+
+satisfies
+
+the
+
+ODE
+
+(21)
+
+d ln wt dt
+
+= gt(x(t), q(t)),
+
+wt|t=t0
+
+= 1.
+
+(22)
+
+487 In fact, the density t has the representation t(x, q) = E(x(t0),q(t0))(0) (x - x(t), q - q(t))wt[x, q] 488 with the total mass t 1 = E(x(t0),q(t0))(0) wt[x, q]. The three parts in LDyn correspond to the 489 kinetic energy of spatial migration, LSpa, kinetic energy of gene expression change, LExp, and 490 growth energy, LGro, respectively, considered in Eq. (3). 491 The formulation (20) is suitable for the numerical evaluation of the loss function through Monte
+492 Carlo particle simulations instead of density estimation in high dimensional space. We also remark
+493 that the evolution of (17) can be implemented in the forward (from t0 to tK ) or backward (from 494 tK to t0) way, and similar formulations as above can be obtained correspondingly. Both directions 495 are taken in our computations for a more robust performance.
+
+496 Matching loss in stVCR
+497 The constraints tk 1 = nk/n0 and ¯tk = ^(k) in (18) are indeed realized as soft penalties to 498 perform distribution matching. This matching between the total mass, {¯tk }k=1:K and ^(1:K), 499 and the determination of {(R1:K , r1:K )} are obtained simultaneously in terms of the rigid body 500 transformation invariant OT.
+Define the weights wt,j = wt[xj, qj] for the cell j with initial state (xj(0), qj(0)) at t = t0. With this notation, we have the evolved distribution
+
+t
+
+=
+
+1 n0
+
+n0
+wt,j (x - x(jt), q
+j=1
+
+- qj(t)).
+
+501 The total mass of t is
+
+n0 j=1
+
+wt,j /n0,
+
+which
+
+no
+
+longer
+
+corresponds
+
+to
+
+a
+
+probability
+
+distribution.
+
+502 This non-normalization is due to the cell proliferation.
+
+503
+
+The matchings between the total mass, and the normalized distributions {¯tk }k and {^(k)}k is
+
+504 performed through the loss function
+
+K
+LMch =
+
+W2(¯tk , ^(k)) 2 + Gro K |
+
+k=1
+
+k=1
+
+n0 j=1
+
+wtk ,j
+
+-
+
+nk | ,
+
+nk
+
+(23)
+
+where the second term penalizes the total mass mismatch through their relative error, and the
+first term penalizes the normalized distribution mismatch which we take as the square of the 2-Wasserstein distance between {¯tk }k and {^(k)}k:
+
+W2(¯tk , ^(k))
+
+2 := min
+P U (¯tk ,^(k))
+
+C(k), P
+
+.
+
+Naturally, we take the cost matrix C(k) by integrating gene expression and spatial coordinates with components
+
+ci(jk) = Exp
+
+qi(tk) - q^j(k)
+
+2 2
+
++
+
+(1
+
+-
+
+Exp)
+
+x(itk) - x^(jk)
+
+22,
+
+i = 1 : n0, j = 1 : nk
+
+16
+
+505 where x^(jk) = Rkx(jk) + rk is the coordinate after the alignment manipulation, Exp is an adjustable 506 hyperparameter that measures the importance of gene expression or spatial coordinates.
+
+507 Modeling known cell type transition prior
+508 Modeling known biological prior can help to infer the spatiotemporal dynamics of single cells more 509 accurately, especially for situations where there are few observed time points or long time intervals 510 between adjacent time points. For known permissible cell type transitions, we grouped cells with 511 permissible transitions at different time points into the same type. We use ^c(k) to refer to the 512 empirical distribution of type c cells in the observed data (after rotation and translation) at the 513 time point tk, and ¯tk,c to refer to the normalized distribution of type c cells evolving from t0 to 514 tk. Assuming a total of C types, we realize the distribution matching for each known permissible 515 cell type transitions, i.e.,
+
+tk,c 1 = nk,c/n0,c, ¯tk,c = ^c(k), k = 1 : K, c = 1 : C,
+
+(24)
+
+516 where n0,c and nk,c are the number of type c cells at time t0 and tk, respectively. In this cir517 cumstance, the feasible state space S(X(0:K), Q(0:K)) must be modified correspondingly, and the
+518 matching loss (23) has to be revised as
+
+K
+LMch =
+
+C
+
+K
+W2(¯tk,c, ^(ck)) 2 + Gro
+
+C|
+
+k=1 c=1
+
+k=1 c=1
+
+n0,c j=1
+
+wtk ,j
+
+-
+
+nk,c| ,
+
+nk,c
+
+(25)
+
+519 Modelling spatial structure preserving prior
+520 Organ development obeys physical rules, and its spatial structure cannot change at will. For exam521 ple, some organs remain connected as they develop without breaking into multiple parts. However, 522 when the time interval between observations is long, usual OT-methods often produce results that 523 violate the physical rules in order to minimize the energy, so we need to explicitly model this prior 524 to maintain the spatial structure of the specified organ. For the organs that need to be spatially 525 structure-preserved, we first construct a graph according to spatial coordinates and gene expres526 sion. More specifically, at t = t0, we first construct a kspa nearest-neighbor graph using the spatial 527 coordinates, and then find the knbr cells with the closest gene expression as the final neighbors 528 from the kspa spatial neighbors of each cell in the specified structure to complete the graph con529 struction. We denote the index set of these knbr neighbor cells, which is a subset of {1 : n0}, 530 by N (x(t0), q(t0)) for each cell (x(t0), q(t0)) in the specified structure at t = t0. In order to keep 531 the specified organ development obeying the physical rules, we add the optional spatial structure 532 preserving loss function
+
+L(SoSpPt)
+
+=
+
+nss
+
+1
+
+E(x(t0 ) ,q (t0 ) )~(0)
+
+n k 0
+
+nbr
+
+iN (x(t0),q(t0))
+
+tK t0
+
+d dt
+
+|x(it)
+
+-
+
+x(t)|
+
+2
+wt[x, q]dt,
+
+(26)
+
+533 where ~(0) is the probability distribution for the cells in the specified structure and nss is the is 534 the number of cells in the specified structure. LS(oSpPt) preservers spatial structure by promoting as 535 little change as possible in the distance between spatial trajectories of neighboring cells. It can be
+536 understood as a continuous time limit of the Gromov-Wasserstein OT distance.
+
+537 Deep learning-based solver in stVCR
+Optimizing the total loss L in (2) is generally difficult, we use deep learning to find an approximate solution. For the arguments (t, vt, pt, gt; R1:K , r1:K ) in the optimization, t is indeed determined by (vt, pt, gt). We suppose that changes in gene expression, cell migration, and cell proliferation depend on current gene expression and spatial location, and are parameterized by neural networks, i.e., vt(x, q) = v(x, q, t; v), pt(x, q) = p(x, q, t; p) and gt(x, q) = g(x, q, t; g), where  := (v, p, g) are the parameters of the neural networks. For the rigid body transformations, the rotation matrix R can be explicitly parameterized. In 2D case, we take
+
+R=
+
+cos  - sin  sin  cos 
+
+,
+
+17
+
+where  is the rotation angle. In 3D case, we parameterize the rotation matrix R by the Euler angles , , and  with R = Rx()Ry()Rz(), where
+
+1 0 0 
+
+ cos  0 sin  
+
+cos  - sin  0
+
+Rx() = 0 cos  - sin  , Ry() =  0 1 0  , Rz() = sin  cos  0 .
+
+0 sin  cos 
+
+- sin  0 cos 
+
+0 01
+
+538 Therefore, the overall parameters we need to optimize are the neural network parameters , as well
+
+539 as the rotation angles k (or Euler angles k, k and k in 3D case) and translation vectors rk for
+
+540 k = 1 : K.
+
+541
+
+With the above parameterization, the constraint PDE tt +  · ((vt, pt)t) = gtt with initial
+
+542 value t=t0 = (0) can be solved by the particle approximations through the ODEs (21) and (22) by
+
+543 replacing the functions (vt, pt, gt) with (v(x, q, t; v), p(x, q, t; p), g(x, q, t; g)). The evaluation of
+
+544 the integral in (20) can be also performed by numerical quadrature in time with the parameterized
+
+545 (v, p, g). Finally, the overall loss
+
+L(, 1:K , 1:K , 1:K , r1:K ) = LDyn + MchLMch + SSPLS(oSpPt)
+
+(27)
+
+546 can be evaluated through the deep learning approximations. The optimization of the parameters 547 are achieved by the Adam optimizer [61]. In (27), LDyn and LMch are required and LS(oSpPt) is optional. 548 Whether or not to include cell type transition prior in LMch is also optional.
+
+549 Parameter initialization and training details
+550 The structure of our neural networks v(x, q, t; v), p(x, q, t; p) and g(x, q, t; g) use multilayer 551 perceptron (MLP) with 128 neurons per layer for a total of 6 layers. To obtain an initial rotation and 552 translation, We downsample 5000 cells in the data, and then use static rigid-body transformation 553 invariant OT on the downsampled data. The training process involves solving the ODEs represented 554 by the neural network, that is neural ODE, which we implement using the torchdiffeq package [48]. 555 It also involves computing the static OT distance, which we implement using the POT package [47]. 556 Finally, in order to enhance the matching with the observed data at each time point and improve 557 the robustness of the algorithm (the new organs or cell types may appear in later time points), 558 we not only compute the loss function defined by (27) by sampling the data from t0 to later time 559 points, but also compute a similar loss function by sampling the data from other time points tk, 560 evolving forward and backward. In actual computations, we choose to sample from the first time 561 point t0 and the last time point tK to balance the accuracy and computational overhead.
+
+562 Time-dependent cell type classifier
+563 After we recovered the entire cell dynamics, we could obtain the gene expression and spatial location 564 of cells at unobserved moments. In order to obtain type annotations for these cells at unobserved 565 moments, we train a time-dependent cell type classifier using a neural network in cells that already 566 have cell type annotations, so that we can use it for cell type annotation at unobserved moments. 567 Specifically, we represent a classifier by a neural network f = ftype(x, q, t; type). The inputs are 568 gene expression q, spatial coordinates x, and time t, and the outputs are probability distributions 569 indicating the probability with which the cell (x, q) at time t belongs to each cell type. The loss 570 function is taken as
+
+1N L(type) = N
+i=1
+1N =
+N
+i=1
+
+H(yi, fi) + 
+
+fi t
+
+1
+
+Kt
+- yi,j log(fi,j )
+
++
+
+fi t
+
+1
+
+,
+
+j=1
+
+(28)
+
+571 where H(·, ·) is the cross entropy, fi := f (xi, qi, t), yi is the annotated cell type for cell i, Kt is the 572 total number of cell types, and yi,j, fi,j is the annotated and trained probabilities that the cell i is 573 of type j. The first term in (28) is to force the trained classifier to be consistent with the known
+574 cell type annotations, while the second term is a regularization to promote the smoothness of the 575 neural network classifier in time through an 1 norm of the time derivative on observation points.
+
+18
+
+576 Downstream analysis
+577 For notational simplicity, we omit the notation for the parameters of the neural networks in the 578 following description. When we use the stVCR to obtain the spatial velocity v(x, qemb, t), the gene 579 expression velocity pemb(x, qemb, t) in the embedded space, the cell proliferation rate g(x, qemb, t), 580 and the time-dependent classifier ftype(x, qemb, t), we can perform a series of downstream analyses, 581 including interpolation, prediction, and study of cell-specific gene-gene, gene-space and space-space 582 interaction and the effects of gene and spatial migration on cell proliferation, etc. Below we give a 583 detailed description of some downstream analysis tasks.
+
+584 Recovery of cell evolution rates in original space
+585 As stated in the data preprocessing step, the original gene expression and its dimension-reduced 586 expression value in embedded space, qori and qemb, are related by the trained encoder-decoder 587 neural network fenc, fdec as qemb = fenc(qori) and qori = fdec(qemb). With this representation, we 588 can easily recover the spatial velocity, gene expression velocity and proliferation rate in original 589 gene expression space:
+
+1 pori(x, qori, t) = 2t fdec fenc(qori) + tpemb(x, fenc(qori), t)
+- fdec fenc(qori) - tpemb(x, fenc(qori), t) , v(x, qori, t) =v(x, fenc(qori), t), g(x, qori, t) = g(x, fenc(qori), t).
+
+(29)
+
+590 Interpolation and prediction
+591 For some interpolation time tint which the user is interested in, we choose the observation time tobs 592 that is closest to tint. Without losing generality, we assume that tobs < tint. We take the observed 593 data qi and xi at tobs as the initial values, and then evolve according to the dynamics learned by 594 stVCR to obtain the interpolation result. More specifically, for the ith cell to evolve from time t to 595 t + t, we first compute
+
+x(it+t) = xi(t) + vt(x(it), qi(,te)mb)t, qi(,te+mbt) = qi(,te)mb + pt(xi(t), qi(,te)mb)t,
+
+(30)
+
+596 then generate a random number U  Uniform[0, 1]: if gt(xi(t), qi(,te)mb) > 0 and U < gt(xi(t), qi(,te)mb)t, 597 perform cell division; if gt(x(it), qi(,te)mb) < 0 and U < -gt(x(it), qi(,te)mb)t, then perform cell apoptosis. 598 The prediction task is completely similar to the interpolation task, which only needs to take the
+599 data of the last time point as the initial value.
+
+600 Cell specific gene-gene, gene-space and space-space interaction
+
+601 We can study the interaction between genes and space from the learned quantities. For a cell i, as 602 well as the target gene j and the source gene k of interest, we can calculate ptj/qk|(x,q)=(xi,qi),
+603 which represents how increased expression of gene k changes the velocity of gene j in cell i. If it is
+
+604 positive, it means that gene k promotes gene j in cell i, otherwise gene k inhibits gene j.
+
+605
+
+Similarly, for cell i, and axes j and k of interest, we can calculate vtj/xk|(x,q)=(xi,qi) to study
+
+606 space-space interaction. This is used in Spateo [43], although their spatial vector fields v(x) are
+
+607 independent of gene expression q and time t.
+
+In stVCR, gene expression q and spatial coordinates x interact, which means we can study
+
+how cell migration affects gene expression. For cell i, a target gene j, and a given unit direction
+
+n = (n1, n2, n3) (or n = (n1, n2) for 2D case), we can calculate the directional derivative
+
+ptj n
+
+=
+
+pjt x1
+
+n1
+
++
+
+ptj x2
+
+n2
+
++
+
+ptj x3
+
+n3
+
+at (x, q) = (xi, qi), which describes how the migration of cell i to the given direction n affects the
+
+expression of gene j, with positive values representing promotion and negative values the opposite.
+
+In addition, we can study how gene expression affects cell migration. For cell i and gene j of
+
+interest, we can define
+
+ni,qj :=
+
+vt1 qj
+
+,
+
+vt2 qj
+
+,
+
+vt3 qj
+
+,
+
+19
+
+608 which describes that increased expression of gene j will promote the cell i migration in the direction
+609 ni,qj / ni,qj and ni,qj indicates the promotion intensity. Finally, we can define partial derivative of the norm of cell migration velocity with respect to
+gene  vi /qj of cell i and gene j as migration driver gene score based on the above calculations
+
+ vi qj
+
+=
+
+1 vi
+
+vi1
+
+vi1 qj
+
++
+
+vi2
+
+vi2 qj
+
++
+
+vi3
+
+vi3 qj
+
+,
+
+610 where vi := vt(xi, qi).
+
+611 Cell specific effects of gene and spatial migration on growth
+612 For cell i and gene j of interest, we can calculate gt/qj|(x,q)=(xi,qi), which describes the effect 613 of gene j on cell proliferation, where a positive value means promoting, and a negative value the 614 opposite. This concept is used in TIGON [34]. However, their growth function gt(q) does not 615 depend on spatial coordinates x, so the effect of cell spatial migration on growth cannot be studied.
+In stVCR, cell proliferation depends on both its gene expression and its spatial location, so we can also study how cell migration affects its growth. For cell i and a given unit direction n = (n1, n2, n3), we can calculate the directional derivative
+
+gt n
+
+=
+
+gt x1
+
+n1
+
++
+
+gt x2
+
+n2
+
++
+
+gt x3
+
+n3
+
+,
+
+616 which describes how cell migration in the direction n affects its proliferation.
+617 Finally, we can define partial derivatives of the cell proliferation rate with respect to gene j for 618 cell i, gt/qj|(x,q)=(xi,qi), as growth driver gene score based on the above calculations.
+
+619 Temporal Developmental lineage construction
+620 Since we can interpolate for any time points of interest and can annotate cells at these unob621 served time points with the time-dependent classifier ftype(x, qemb, t), we can construct temporal 622 developmental lineages of cells of interest.
+
+623 Simulated data setup
+624 In this paper, two simulation data are included. The first corresponding to Fig. 2 and the second 625 corresponding to Fig. 5 and Fig. S11. Below, we will introduce how these three simulation data 626 are generated. 627 For the first simulation data corresponding to Fig. 2, the dynamics consists of three genes Red, 628 Green and Blue and two spatial coordinates x and y, whose regulation is shown in Fig. 2A. Such 629 a regulatory relationship can be described by a system of stochastic differential equations for gene 630 expression and spatial coordinates
+
+dr
+
+rn
+
+1
+
+dt = f1(x) 1 + rn + 1 + gn + 10bn - r + 0.05wt,
+
+dg
+
+gn
+
+1
+
+dt = f2(x) 1 + gn + 1 + rn + 10bn - g + 0.05wt,
+
+db
+
+b2
+
+dt = 1 + b2 - 0.4b + 0.01wt,
+
+(31)
+
+dx dt
+
+=
+
+sign(x) exp(-4b) exp(-4g)(r
+
+-
+
+2)2r2
+
++
+
+0.001wt,
+
+dy = 0,
+dt
+
+631 where r, g and b refer to gene Red, Green and Blue, f1(x) and f2(x) refer to the factors that depend 632 on the coordinates x, and wt is a standard Brownian motion. In the computation, we take n = 4 to 633 simulate the nonlinear regulation between genes. If we ignore these two x-related factors f1(x) and 634 f2(x), r and g are a toggle switch of equal status. We hope |x| > 1, f1(x) > 1 and f2(x) = 1, this 635 will promote Red expression. Conversely, when |x| < 1, f2(x) > 1 and f1(x) = 1, this will promote 636 Green expression. The specific forms of f1(x) and f2(x) are detailed in the Supplementary Note 2.
+
+20
+
+637 cell proliferation modeled as division and apoptosis:
+
+2r |x|
+
+g
+
+proliferation
+
+rate
+
+=
+
+gdivision
+
+-
+
+gapoptosis
+
+=
+
+1+r
+
+1+
+
+|x|
+
+-
+
+1+
+
+, g
+
+(32)
+
+638 which means that the gene Red and migrating outward in the horizontal direction will promote cell 639 proliferation while the gene Green will inhibit cell proliferation. We sampled three groups of cells 640 at the initial moment and discretized time in order to obtain data through numerical simulations. 641 We simulate gene expression and spatial coordinates according to the forward Euler scheme and 642 simulate cell division and apoptosis by numerically simulating a special Markov process, the birth 643 and death process. Specific details of the sampling of initial values and numerical simulation can 644 be found in the Supplementary Note 2. We evolved the cells at the initial time point from t = 0 to 645 t = 3.0 according to the given dynamics and took a total of six time points at t = 0, 0.5, 1.0, 1.5, 2.0 646 and 2.5 as observations. Considering that the spatial coordinates obtained at different time points 647 using spatial transcriptome sequencing are not in the same coordinate system, we rotated the 648 spatial coordinates of the second to sixth time points counterclockwise by 8, 16, 24, 32 and 40 649 degrees, respectively. 650 For the second simulation data corresponding to Fig. 4 and Fig. S11, similar to the first, the 651 dynamics consists of three genes Red, Green and Blue and two spatial coordinates x and y. There 652 are two types of cells in this simulation data, background cells and migratory cells. The background 653 cells are in steady state, and their spatial coordinates and gene expression do not change with 654 time. The migratory cells transited from high expression of Red and Green gene to high expression 655 of only Red gene while moving to the right. Initial values for background cells and migratory cells 656 can be found in the Supplementary Note 2. Gene expression and spatial coordinates of migrating 657 cells evolve over time and obey stochastic dynamical systems
+
+dr dt = 0.05wt,
+
+dg
+
+gn
+
+1
+
+= 1.5 dt
+
+1 + gn + 1 + rn + 10bn - g
+
++ 0.05wt,
+
+db
+
+b2
+
+dt = 1 + b2 - 0.4b + 0.01wt,
+
+(33)
+
+dx dt = 1 + 0.001wt,
+
+dy = 0,
+dt
+
+658 where we take n = 4 to model non-linear regulatory relationships. Unlike the first simulation data, 659 we do not consider growth in the second simulation data. We evolved the cell at the initial time 660 point from t = 0 to t = 1.0 according to the given dynamics. In Fig. 4, we took only two time 661 points at t = 0 and 1.0 as observations. Additionally we rotated the spatial coordinates of the 662 second time point by 8 degrees counterclockwise. In Fig. S11, we took a total of five time points 663 at t = 0, 0.25, 0.5, 0.75 and 1 as observations and rotated the spatial coordinates of the second to 664 fifth time points counterclockwise by 8, 16, 24 and 32 degrees, respectively.
+
+665 Details of GO enrichment analysis
+666 We used the python package GSEApy=1.0.3 [62] to perform GO enrichment analyses on migration 667 genes and growth genes. In addition, the gene sets used were GO Biological Process 2018 (https: 668 //maayanlab.cloud/Enrichr/#libraries).
+
+669 Data Availability
+670 All the datasets used in this paper are publicly available. The simulation datasets of synthetic 671 circuits are available at https://github.com/QiangweiPeng/stVCR/tree/main/tutorial. The axolotl 672 brain regeneration datasets are freely accessible in CNGB Nucleotide Sequence Archive under 673 accession code CNP0002068. Processed data can be downloaded from https://db.cngb.org/stomics/ 674 artista/ [49]. The processed 3D Drosophila embryo datasets can be downloaded from the Spateo 675 package [43] (https://www.dropbox.com/s/bvstb3en5kc6wui/E7-9h cellbin tdr v2.h5ad?dl=1 and 676 https://www.dropbox.com/s/q02sx6acvcqaf35/E9-10h cellbin tdr v2.h5ad?dl=1).
+
+21
+
+677 Code Availability
+678 stVCR is implemented in Python and is available at https://github.com/QiangweiPeng/stVCR. 679 The notebooks to reproduce all the results in the manuscript are available at https://github.com/ 680 QiangweiPeng/stVCR/tree/main/tutorial.
+681 Supporting Information
+682 Supplementary Notes 1-3 683 Supplementary Figures S1-S11 684 Supplementary Videos S1-S15
+685 Acknowledgments
+686 The authors thank the anonymous referees for careful reading and constructive suggestions. 687 TL and QP acknowledge the support from National Key R&D Program of China under 688 grant 2021YFA1003301, and National Science Foundation of China under grant 12288101. PZ 689 acknowledge the support from National Science Foundation of China under grants 12288101, 690 8206100646, and the Fundamental Research Funds for the Central Universities. We also thank the 691 High-performance Computing Platform of Peking University .
+692 Contribution
+693 All authors conceived the project. QP designed and implemented the algorithm, and performed data 694 analysis. All authors interpreted the results and wrote the manuscript. QP wrote the supplementary 695 materials. PZ and TL supervised the research.
+References
+[1] Gerri, C., Menchero, S., Mahadevaiah, S. K., Turner, J. M. & Niakan, K. K. Human embryogenesis: a comparative perspective. Annual Review of Cell and Developmental Biology 36, 411­440 (2020).
+[2] Briggs, J. A. et al. The dynamics of gene expression in vertebrate embryogenesis at single-cell resolution. Science 360, eaar5780 (2018).
+[3] Farrell, J. A. et al. Single-cell reconstruction of developmental trajectories during zebrafish embryogenesis. Science 360, eaar3131 (2018).
+[4] Tyser, R. C. et al. Single-cell transcriptomic characterization of a gastrulating human embryo. Nature 600, 285­289 (2021).
+[5] Lauffenburger, D. A. & Horwitz, A. F. Cell migration: a physically integrated molecular process. Cell 84, 359­369 (1996).
+[6] Yamada, K. M. & Sixt, M. Mechanisms of 3d cell migration. Nature Reviews Molecular Cell Biology 20, 738­752 (2019).
+[7] St°ahl, P. L. et al. Visualization and analysis of gene expression in tissue sections by spatial transcriptomics. Science 353, 78­82 (2016).
+[8] Rodriques, S. G. et al. Slide-seq: A scalable technology for measuring genome-wide expression at high spatial resolution. Science 363, 1463­1467 (2019).
+[9] Stickels, R. R. et al. Highly sensitive spatial transcriptomics at near-cellular resolution with slide-seqv2. Nature Biotechnology 39, 313­319 (2021).
+[10] Chen, A. et al. Spatiotemporal transcriptomic atlas of mouse organogenesis using DNA nanoball-patterned arrays. Cell 185, 1777­1792 (2022).
+22
+
+[11] Oliveira, M. F. et al. Characterization of immune cell populations in the tumor microenvironment of colorectal cancer using high definition spatial profiling. BioRxiv 2024­06 (2024).
+[12] La Manno, G. et al. RNA velocity of single cells. Nature 560, 494­498 (2018).
+[13] Bergen, V., Lange, M., Peidli, S., Wolf, F. A. & Theis, F. J. Generalizing RNA velocity to transient cell states through dynamical modeling. Nature Biotechnology 38, 1408­1414 (2020).
+[14] Gao, M., Qiao, C. & Huang, Y. Unitvelo: temporally unified RNA velocity reinforces single-cell trajectory inference. Nature Communications 13, 6586 (2022).
+[15] Cui, H. et al. Deepvelo: deep learning extends RNA velocity to multi-lineage systems with cell-specific kinetics. Genome Biology 25, 27 (2024).
+[16] Li, S. et al. A relay velocity model infers cell-dependent RNA velocity. Nature Biotechnology 42, 99­108 (2024).
+[17] Gayoso, A. et al. Deep generative modeling of transcriptional dynamics for RNA velocity analysis in single cells. Nature Methods 21, 50­59 (2024).
+[18] Farrell, S., Mani, M. & Goyal, S. Inferring single-cell transcriptomic dynamics with structured latent gene expression dynamics. Cell Reports Methods 3 (2023).
+[19] Li, T., Shi, J., Wu, Y. & Zhou, P. On the mathematics of RNA velocity I: theoretical analysis. BioRxiv 2020­09 (2020).
+[20] Battich, N. et al. Sequencing metabolically labeled transcripts in single cells reveals mRNA turnover strategies. Science 367, 1151­1156 (2020).
+[21] Erhard, F. et al. scSLAM-seq reveals core features of transcription dynamics in single cells. Nature 571, 419­423 (2019).
+[22] Qiu, Q. et al. Massively parallel and time-resolved RNA sequencing in single cells with scNT-seq. Nature Methods 17, 991­1001 (2020).
+[23] Cao, J., Zhou, W., Steemers, F., Trapnell, C. & Shendure, J. Sci-fate characterizes the dynamics of gene expression in single cells. Nature Biotechnology 38, 980­988 (2020).
+[24] Hendriks, G.-J. et al. NASC-seq monitors RNA synthesis in single cells. Nature Communications 10, 3138 (2019).
+[25] Xu, Z., Sziraki, A., Lee, J., Zhou, W. & Cao, J. Dissecting key regulators of transcriptome kinetics through scalable single-cell RNA profiling of pooled CRISPR screens. Nature Biotechnology 1­6 (2023).
+[26] Holler, K. et al. Spatio-temporal mRNA tracking in the early zebrafish embryo. Nature Communications 12, 3358 (2021).
+[27] Lin, S. et al. Well-temp-seq as a microwell-based strategy for massively parallel profiling of single-cell temporal RNA dynamics. Nature Communications 14, 1272 (2023).
+[28] Qiu, X. et al. Mapping transcriptomic vector fields of single cells. Cell 185, 690­711 (2022).
+[29] Peng, Q., Qiu, X. & Li, T. Storm: Incorporating transient dynamics to infer the RNA velocity with metabolic labeling information. BioRxiv 2023­06 (2023).
+[30] Schiebinger, G. et al. Optimal-transport analysis of single-cell gene expression identifies developmental trajectories in reprogramming. Cell 176, 928­943 (2019).
+[31] Tong, A., Huang, J., Wolf, G., Van Dijk, D. & Krishnaswamy, S. Daum´e III, H. & Singh, A. (eds) Trajectorynet: A dynamic optimal transport network for modeling cellular dynamics. (eds Daum´e III, H. & Singh, A.) International Conference on Machine Learning, Vol. 119, 9526­9536 (PMLR, 2020).
+23
+
+[32] Benamou, J.-D. & Brenier, Y. A computational fluid mechanics solution to the MongeKantorovich mass transfer problem. Numerische Mathematik 84, 375­393 (2000).
+[33] Huguet, G. et al. Manifold interpolating optimal-transport flows for trajectory inference. Advances in Neural Information Processing Systems 35, 29705­29718 (2022).
+[34] Sha, Y., Qiu, Y., Zhou, P. & Nie, Q. Reconstructing growth and dynamic trajectories from single-cell transcriptomics data. Nature Machine Intelligence 6, 25­39 (2024).
+[35] Chizat, L., Peyr´e, G., Schmitzer, B. & Vialard, F.-X. An interpolating distance between optimal transport and Fisher­Rao metrics. Foundations of Computational Mathematics 18, 1­44 (2018).
+[36] Zhang, K., Zhu, J., Kong, D. & Zhang, Z. Modeling single cell trajectory using forwardbackward stochastic differential equations. PLOS Computational Biology 20, e1012015 (2024).
+[37] Jiang, Q. & Wan, L. A physics-informed neural SDE network for learning cellular dynamics from time-series scRNA-seq data. Bioinformatics 40, ii120­ii127 (2024).
+[38] Zhang, Z., Li, T. & Zhou, P. Learning stochastic dynamics from snapshots through regularized unbalanced optimal transport. arXiv preprint arXiv:2410.00844 (2024).
+[39] Zeira, R., Land, M., Strzalkowski, A. & Raphael, B. J. Alignment and integration of spatial transcriptomics data. Nature Methods 19, 567­575 (2022).
+[40] M´emoli, F. Gromov­Wasserstein distances and the metric approach to object matching. Foundations of Computational Mathematics 11, 417­487 (2011).
+[41] Klein, D. et al. Mapping cells through time and space with moscot. BioRxiv 2023­05 (2023).
+[42] Scetbon, M. & Cuturi, M. Low-rank optimal transport: Approximation, statistics and debiasing. Advances in Neural Information Processing Systems 35, 6802­6814 (2022).
+[43] Qiu, X. et al. Spateo: multidimensional spatiotemporal modeling of single-cell spatial transcriptomics. BioRxiv 2022­12 (2022).
+[44] Halmos, P. et al. Ma, J. (ed.) Dest-ot: Alignment of spatiotemporal transcriptomics data. (ed.Ma, J.) International Conference on Research in Computational Molecular Biology, 434­ 437 (Springer, 2024).
+[45] Liu, J., Gu, Y., Li, C. & Welch, J. D. Mapping cell fate transition in space and time. BioRxiv 2024­02 (2024).
+[46] Zhou, P., Bocci, F., Li, T. & Nie, Q. Spatial transition tensor of single cells. Nature Methods 1­10 (2024).
+[47] Flamary, R. et al. POT: Python optimal transport. Journal of Machine Learning Research 22, 1­8 (2021). URL http://jmlr.org/papers/v22/20-451.html.
+[48] Chen, R. T., Rubanova, Y., Bettencourt, J. & Duvenaud, D. K. Neural ordinary differential equations. Advances in Neural Information Processing Systems 31 (2018).
+[49] Wei, X. et al. Single-cell stereo-seq reveals induced progenitor cells involved in axolotl brain regeneration. Science 377, eabp9444 (2022).
+[50] Tong, A. et al. Conditional flow matching: Simulation-free dynamic optimal transport. arXiv preprint arXiv:2302.00482 2 (2023).
+[51] Jin, S. et al. Inference and analysis of cell-cell communication using CellChat. Nature Communications 12, 1088 (2021).
+[52] Cang, Z. et al. Screening cell­cell communication in spatial transcriptomics via collective optimal transport. Nature Methods 20, 218­228 (2023).
+24
+
+[53] Wang, K. et al. PhyloVelo enhances transcriptomic velocity field mapping using monotonically expressed genes. Nature Biotechnology 42, 778­789 (2024).
+[54] Li, C., Virgilio, M. C., Collins, K. L. & Welch, J. D. Multi-omic single-cell velocity models epigenome­transcriptome interactions and improves cell fate prediction. Nature Biotechnology 41, 387­398 (2023).
+[55] Peyr´e, G. & Cuturi, M. Computational Optimal Transport: With Applications to Data Science Vol. 11 of Foundations and Trends in Machine Learning (now Publishers Inc., 2019).
+[56] Liero, M., Mielke, A. & Savar´e, G. Optimal transport in competition with reaction: The Hellinger­Kantorovich distance and geodesic curves. SIAM Journal on Mathematical Analysis 48, 2869­2911 (2016).
+[57] Kondratyev, S., Monsaingeon, L. & Vorotnikov, D. A new optimal transport distance on the space of finite radon measures. Advances in Differential Equations 21, 1117 ­ 1164 (2016).
+[58] Cohen, S. & Guibasm, L. Werner, B. (ed.) The earth mover's distance under transformation sets. (ed.Werner, B.) Proceedings of the Seventh IEEE International Conference on Computer Vision, Vol. 2, 1076­1083 (IEEE, 1999).
+[59] Sch¨onemann, P. H. A generalized solution of the orthogonal procrustes problem. Psychometrika 31, 1­10 (1966).
+[60] Shi, J., Aihara, K., Li, T. & Chen, L. Energy landscape decomposition for cell differentiation with proliferation effect. National Science Review 9, nwac116 (2022).
+[61] Bishop, C. M. & Bishop, H. Deep Learning: Foundations and Concepts (Springer Nature Switzerland, Switzerland, 2024).
+[62] Fang, Z., Liu, X. & Peltz, G. GSEApy: a comprehensive package for performing gene set enrichment analysis in Python. Bioinformatics 39, btac757 (2023).
+25
+
+

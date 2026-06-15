@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>速读 · __论文标题__</title>
+<style>
+  :root{
+    --bg:#eceef1; --panel:#fff; --ink:#1c2127; --sub:#5b6470;
+    --line:#e2e6eb; --accent:#2b6cb0; --accent-soft:#eaf2fb;
+    --fig:#fff8ec; --fig-line:#f0dcb8; --hl:#fff3cd;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       color:var(--ink);background:var(--bg);overflow:hidden;line-height:1.55}
+  /* ---- 右栏头部（原顶部 header 移入右侧栏开头） ---- */
+  #guide-head{padding:14px 16px 0}
+  #guide-head h1{font-size:18px;font-weight:700;line-height:1.4}
+  #guide-head .en{font-size:13px;color:var(--sub);font-weight:400;margin-top:2px}
+  #guide-head .meta{font-size:12px;color:var(--sub);margin-top:4px}
+  #guide-head .meta a{color:var(--accent);text-decoration:none}
+  .nav{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center;
+       position:sticky;top:0;z-index:5;background:#f6f7f9;padding:8px 16px 9px;
+       border-bottom:1px solid var(--line);box-shadow:0 2px 5px rgba(0,0,0,.04)}
+  .chip{font-size:13px;padding:3px 11px;border:1px solid var(--line);border-radius:14px;
+        background:#fafbfc;color:var(--sub);cursor:pointer;user-select:none}
+  .chip:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .pageind{margin-left:auto;font-size:13px;color:var(--sub)}
+  /* ---- main split ---- */
+  main{display:flex;height:100vh}
+  #pdf-pane{width:55%;overflow-y:auto;background:var(--bg);padding:14px 0;text-align:center}
+  #pdf-pane .pg{margin:0 auto 14px;box-shadow:0 1px 6px rgba(0,0,0,.16);background:#fff;
+                position:relative;display:inline-block;width:96%}
+  #pdf-pane canvas{display:block;width:100%;height:auto;border-radius:2px}
+  #pdf-pane .pgnum{position:absolute;top:6px;left:6px;font-size:10px;color:#fff;
+                   background:rgba(0,0,0,.45);padding:1px 6px;border-radius:8px}
+  #resizer{width:6px;cursor:col-resize;background:linear-gradient(var(--line),var(--line));
+           flex:0 0 6px}
+  #resizer:hover{background:var(--accent)}
+  #guide-pane{flex:1;overflow-y:auto;background:#f6f7f9}
+  #guide-body{padding:6px 16px 80px}
+  /* ---- guide cards ---- */
+  .sec-h{font-size:16px;font-weight:700;color:var(--accent);margin:22px 0 10px;
+         padding-bottom:5px;border-bottom:2px solid var(--accent-soft);display:flex;align-items:center;gap:7px}
+  .sec-h:first-child{margin-top:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+        padding:11px 13px;margin-bottom:11px;position:relative}
+  .card.fig{background:var(--fig);border-color:var(--fig-line)}
+  .card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px}
+  .card .t{font-size:15.5px;font-weight:600;color:var(--ink)}
+  .card.fig .t::before{content:"📊 ";}
+  .badge{flex:0 0 auto;font-size:12px;font-weight:600;color:#fff;background:var(--accent);
+         padding:2px 8px;border-radius:10px;cursor:pointer;white-space:nowrap;text-decoration:none}
+  .badge:hover{background:#1f4e7a}
+  .card p{font-size:15px;color:#2b3138;margin:3px 0}
+  .card ul{margin:5px 0 0;padding-left:2px;list-style:none}
+  .card li{font-size:15px;color:#2b3138;margin:6px 0;padding-left:16px;position:relative}
+  .card li::before{content:"";position:absolute;left:3px;top:10px;width:5px;height:5px;
+                   border-radius:50%;background:var(--accent)}
+  .card li .k{font-weight:600;color:var(--accent);margin-right:4px}
+  .lead{font-size:15.5px;color:#2b3138;line-height:1.65}
+  .lead b{color:var(--accent)}
+  /* 词汇卡 */
+  .card.terms{background:#f1f8f3;border-color:#cfe6d3}
+  .card li.term{padding-left:0;margin:11px 0}
+  .card li.term::before{display:none}
+  .tn{display:block;font-weight:700;color:#217a4b;font-size:1.03em;margin-bottom:2px}
+  .flash{animation:fl 1.4s ease}
+  @keyframes fl{0%,40%{background:var(--hl)}100%{}}
+  /* loading */
+  #load{position:absolute;left:0;right:55%;top:0;bottom:0;display:flex;align-items:center;
+        justify-content:center;flex-direction:column;gap:10px;color:var(--sub);font-size:13px;background:var(--bg)}
+  .spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--accent);
+        border-radius:50%;animation:sp 0.8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<main>
+  <div id="pdf-pane"><div id="load"><div class="spin"></div><div>正在渲染 PDF…</div></div></div>
+  <div id="resizer"></div>
+  <div id="guide-pane">
+    <div id="guide-head">
+      <h1>如何用 AI 造一个「虚拟细胞」：一份 CZI 牵头的设计蓝图与行动倡议</h1>
+      <div class="en">How to build the virtual cell with artificial intelligence: Priorities and opportunities</div>
+      <div class="meta">Bunne, Roohani, Rosen et al.（含 Regev、Quake、Leskovec、Lundberg 等 40+ 作者）· Cell 187, 7045–7063 · 2024-12-12 · Stanford / CZI / Genentech 等 · <a href="https://doi.org/10.1016/j.cell.2024.11.015" target="_blank">doi:10.1016/j.cell.2024.11.015</a></div>
+    </div>
+    <div class="nav" id="nav"><span class="pageind" id="pageind">PDF 加载中…</span><span class="chip" id="fzminus" title="缩小讲解字号">A−</span><span class="chip" id="fzplus" title="放大讲解字号">A+</span></div>
+    <div id="guide-body"></div>
+  </div>
+</main>
+
+<script src="./vendor/pdf.min.js"></script>
+<script src="./assets/paper-data.js"></script>
+<script src="./vendor/pdf.worker.inline.js"></script>
+<script>
+/* ============ 中文速读讲解（精读后人工撰写） ============ */
+const SECTIONS = [
+ // ===== 在此填入本论文的中文速读讲解（Claude 精读后撰写） =====
+ // 每个 section = {name:"区名", items:[...]}；item.kind ∈ 'terms' | 'lead' | 'card' | 'fig'
+ //  terms 开篇核心词汇卡（绿底）: {kind:"terms", page, t:"分组名", points:[[术语名（中英）, 大白话解释], ...]}
+ //  lead  一句话核心            : {kind:"lead",  page, html:`可含 <b>加粗</b> 的 HTML`}
+ //  card  普通段落讲解          : {kind:"card",  page, t:"标题", points:[[小标签, 说明], ...]}
+ //  fig   图表讲解（黄底📊）     : {kind:"fig",   page, t:"图N", points:[[panel如"A 分图", 讲解], ...]}
+ //  page = 该内容对应的 PDF 物理页码（点右上角 📄P# 跳到左侧该页）
+ //  ⚠️ 内容里的引号一律用中文「」或弯引号 “” —— 禁用英文直双引号，否则会截断 JS 字符串
+ {name:"🔑 核心词汇（读前必看）", items:[
+   {kind:"terms", page:1, t:"核心概念", points:[
+     ["AIVC（AI virtual cell，AI 虚拟细胞）","本文要造的东西：一个多尺度、多模态、基于大型神经网络的模型，能表示并模拟分子、细胞、组织在各种状态下的行为。不是一套写死规则的程序，而是直接从海量数据里「学」出来的细胞模拟器。"],
+     ["虚拟细胞（virtual cell）","用计算机模拟一个细胞的生物学功能与相互作用的模型。过去多是规则式（微分方程/随机模拟/基于主体的模型），本文主张换成数据驱动的 AI 版本。"],
+     ["多尺度（multi-scale）","细胞跨越多个空间层级：原子→分子→细胞→组织，上一层的性质由下一层非线性「涌现」出来。AIVC 必须把这几层打通。"],
+     ["多模态（multi-modal）","同一个细胞可以用很多种技术测：测 RNA、测染色质、拍显微镜图像……不同「模态」的数据要能映射到同一个内部表示。"],
+     ["in silico（计算机内 / 虚拟）","与 in vitro（试管内）、in vivo（活体内）相对，指完全在计算机里做的「虚拟实验」。AIVC 的卖点就是先在电脑里筛一遍，再去湿实验验证。"]]},
+   {kind:"terms", page:1, t:"两大支柱（本文方法论的核心抽象）", points:[
+     ["UR（universal representation，通用表示）","AIVC 的「大脑」：把任何来源、任何模态的生物数据都压成同一套数值向量（embedding/嵌入）。同一个细胞不管你用什么仪器测，在 UR 里应当是同一个点。分子/细胞/多细胞三个尺度各有一套 UR，下层喂给上层。"],
+     ["VI（virtual instrument，虚拟仪器）","AIVC 的「工具」：在 UR 上操作的神经网络。分两类——manipulator（操纵器）把一个 UR 变成另一个 UR（比如模拟扰动后的新细胞态）；decoder（解码器）把 UR 变成人能看懂的输出（细胞类型标签、合成显微图像、药物响应等）。"],
+     ["embedding（嵌入 / 表示向量）","把高维复杂数据用一串数字表示在连续向量空间里，且保留有意义的关系（相似的细胞靠得近）。UR 本质就是 embedding。"]]},
+   {kind:"terms", page:4, t:"机器学习四件套（Box 3 会细讲）", points:[
+     ["Transformer（变换器）","当下最通用的架构，核心是「自注意力」：一堆 token（基因、RNA、词…）互相看、互相加权融合上下文。把每个基因当 token，自注意力天然就在建模基因间相互作用。"],
+     ["CNN（卷积神经网络）","擅长图像：用滤波器在局部扫描、逐层提取空间特征。适合显微镜图、多重染色、H&E 病理切片、活细胞成像。"],
+     ["Diffusion / Flow matching（扩散 / 流匹配模型）","生成式模型：从随机噪声一步步「去噪」生成结构化输出。流匹配还能建模随时间的分布演化，适合细胞分化轨迹、扰动响应这类动态过程。"],
+     ["GNN（图神经网络）","处理图结构数据：节点+边。组织里每个细胞是节点、空间相邻的细胞连边，GNN 让每个细胞「收到」邻居的消息，从而识别空间互作和细胞「生态位」（niche）。"]]},
+   {kind:"terms", page:7, t:"几个反复出现的术语", points:[
+     ["perturbation（扰动）","对细胞施加的干预：敲基因、加药、改环境。AIVC 要能预测「没在实验室做过」的扰动会产生什么结果，尤其是多个扰动的组合（组合空间爆炸，实验做不完）。"],
+     ["lab-in-the-loop（实验室在环 / 自驱动实验室）","AIVC 不只预测，还能告诉你「下一个最该做的实验是什么」，做完把新数据喂回去继续改进自己，形成预测↔实验的闭环（主动学习）。"],
+     ["foundation model（基础模型）","在超大数据上预训练、能迁移到很多下游任务的大模型（类比 GPT）。AIVC 设想为「一组相互连接的基础模型」。"]]},
+ ]},
+
+ {name:"📌 一句话核心", items:[
+   {kind:"lead", page:1, html:`这是一篇 <b>Cell 的 Perspective（观点/倡议文，不是实验论文）</b>，由 CZI（陈-扎克伯格倡议）牵头、40 多位 AI 与生物学家联署。核心主张：AI 与组学两场革命叠加，<b>现在已经有条件去造一个完全数据驱动的「AI 虚拟细胞」（AIVC）</b>——一个能跨分子/细胞/组织尺度、跨模态表示并<b>模拟</b>细胞行为的大型神经网络。它将让生物学进入「高保真模拟 + 虚拟实验」的新范式，把计算模型从「事后分析数据」升级为「主动生成并优先排序假设」。全文给出设计蓝图（<b>UR 通用表示 + VI 虚拟仪器</b>两大支柱）、数据/评估/可解释性/安全的优先级，并呼吁开放协作。`},
+ ]},
+
+ {name:"① 引言：为什么现在能造", items:[
+   {kind:"card", page:1, t:"旧方法卡在哪", points:[
+     ["传统细胞模型","规则式：微分方程、随机模拟、基于主体的模型，靠人写假设 + 拟合参数。2012 年第一个全细胞模型覆盖生殖支原体全部 482 个基因；后来扩展到大肠杆菌等。"],
+     ["三道坎","① 多尺度（原子→组织，跨层非线性涌现）；② 海量相互作用组件（基因调控、代谢、信号转导彼此纠缠）；③ 高度非线性（输入小变化→输出大变化）。这三点合起来挡住了「造一个完整虚拟细胞」。"]]},
+   {kind:"card", page:1, t:"两场革命叠加 = 机会窗口", points:[
+     ["实验侧","测量通量指数增长，参考数据每 6 个月翻一番，还能配合系统性扰动。"],
+     ["计算侧","AI 能直接从数据学规律，无需显式规则；已在蛋白结构预测（AlphaFold 等）证明可行。"],
+     ["三位一体","本文反复强调 AIVC 要同时是 predictive（可预测）、generative（可生成）、queryable（可查询）。"]]},
+ ]},
+
+ {name:"② Figure 1 + Box 1（能力与挑战）", items:[
+   {kind:"fig", page:3, t:"Figure 1 · AIVC 的三大能力", points:[
+     ["A 通用表示","跨物种、跨条件、跨模态（分子/细胞/多细胞各尺度）都能得到同一套细胞状态的「通用表示 UR」。"],
+     ["B 表示与预测","因为表示是通用的，可泛化到「没见过」的细胞态、对数据类型不敏感（换仪器结果一致），还能建模细胞在状态间的转移（分化、遗传变异、人工扰动）——从而做实验室里做不起或做不了的<b>虚拟实验</b>。"],
+     ["C 与人的交互","三个层级：个体科学家（开放许可、算力普惠、用语言模型解释结果）；科研共同体（评测要超越窄基准、社区共建）；社会层面（保护敏感数据隐私）。"]]},
+   {kind:"card", page:4, t:"Box 1 · 五大宏伟挑战（全文的「待办清单」）", points:[
+     ["定义能力 + 设计评测","先说清 AIVC 核心能力是什么、怎么评，给每个能力配指标和评测数据。"],
+     ["跨情境自洽","不同尺度/情境/模态下结论要一致；同一实体换技术测，内部表示应相同。"],
+     ["可解释性 vs 实用性","大模型越强越像黑箱，要在「可操作的输出」和「可解释」之间权衡（因果建模、稀疏特征、反事实推理）。"],
+     ["搭协作框架","AIVC 应成为开放、互联的共建与教育枢纽，需投资基础设施。"],
+     ["惠及所有人 + 伦理","训练数据要反映人类多样性、防数据造假污染、尽早引入伦理与监管专家。"]]},
+ ]},
+
+ {name:"③ Box 2：三个应用情景（讲故事）", items:[
+   {kind:"card", page:5, t:"情景一 · 细胞工程驱动表型药物发现与细胞疗法", points:[
+     ["虚拟表型筛选","针对患者群体整体表型（而非单一靶点）做 in silico 筛选，优先挑成功率高的虚拟命中，降本提速。"],
+     ["细胞疗法","例：模拟个体患者表型，找出能把祖细胞驱动分化成 β 细胞、并躲过免疫的干预，做个性化 1 型糖尿病 β 细胞替代疗法。"]]},
+   {kind:"card", page:5, t:"情景二 · 用空间生物学对抗癌症", points:[
+     ["肿瘤微环境（TME）","癌细胞在空间邻域里主动逃避免疫；必须在空间上下文里理解免疫抗性。"],
+     ["泛癌框架","AIVC 可把单个研究扩成泛癌、可个性化的框架，找出跨癌种共享的 TME 生态位与标志物，进而「老药新用」。"]]},
+   {kind:"card", page:6, t:"情景三 · 个体患者的诊断型虚拟细胞（数字孪生）", points:[
+     ["数字孪生","给每个病人建一个 AIVC 实例，整合基因序列、单细胞谱、病理图像、病历，定期更新以监测病情、预测不良事件。"],
+     ["范式转变","虚拟细胞从「验证已有假设」变成「主动生成海量待验证假设」，与生物学家迭代互动，最终走向自驱动实验室。"]]},
+ ]},
+
+ {name:"④ Figure 2 + 构建蓝图（UR×VI）", items:[
+   {kind:"card", page:7, t:"AIVC 的两大组件", points:[
+     ["① UR 通用表示","一个多尺度多模态的生物状态表示（embedding）。三个物理尺度——分子、细胞、多细胞——各一套 UR，下层抽象喂给上层，保证跨尺度一致。"],
+     ["② VI 虚拟仪器","在 UR 上操作的神经网络。decoder（UR→人可读输出，如细胞类型/合成显微图）；manipulator（UR→UR，如扰动后的新细胞态）。VI 可共享复用，任何科学家都能在 UR 上搭一个 VI 分享给社区。"]]},
+   {kind:"fig", page:8, t:"Figure 2 · AIVC 总览", points:[
+     ["A & B 物理尺度","对照真实细胞，AIVC 从分子（中心法则 DNA/RNA/蛋白 + 代谢物，可用序列或原子结构表示）→ 细胞（分子的集合，带位置/数量）→ 多细胞（细胞间通讯形成组织）逐层建模，每层 UR 整合自下层。"],
+     ["C & D 虚拟仪器","为捕捉细胞的行为与动态，AIVC 配备 VI：操纵器模拟细胞分裂/迁移/分化/响应扰动时 UR 的转移；解码器把 UR 解出表型属性。"]]},
+ ]},
+
+ {name:"⑤ 三个物理尺度怎么搭", items:[
+   {kind:"card", page:8, t:"分子尺度（第一层）", points:[
+     ["起点","先建中心法则三类分子 DNA/RNA/蛋白，都能写成字符序列（核苷酸/氨基酸），天然适配 NLP 式大语言模型 + 掩码预测目标，数据多。"],
+     ["原子级 vs 序列级","原子级（如 RoseTTAFold All-Atom）更通用但算力贵、数据少、难覆盖动态化学；演化信息丰富的序列表示往往更实用。"]]},
+   {kind:"card", page:8, t:"细胞尺度（第二层）", points:[
+     ["怎么建","把分子表示 + 数量 + 抽象后的位置/时间戳整合成统一的细胞表示。"],
+     ["数据","scRNA-seq、scATAC-seq、染色质修饰、蛋白组；加上成像（共聚焦荧光定位人类蛋白组、活细胞成像、冷冻电镜、超分辨）。架构用 ViT/CNN 处理图像、自编码器/Transformer 处理序列，多模态融合成动态可预测的细胞模型。"]]},
+   {kind:"card", page:8, t:"多细胞尺度（第三层）", points:[
+     ["怎么建","建模细胞如何组织成组织，主要由空间邻近主导。组织可表示成图或点云，用 GNN / 等变网络学习；图像数据用 CNN/ViT。"],
+     ["现状","空间分子生物学是热点但公开数据仍少；统一的空间数据框架（如 SpatialData）能加速多细胞尺度建模。"]]},
+ ]},
+
+ {name:"⑥ Box 3：四种 AI 架构", items:[
+   {kind:"card", page:10, t:"Box 3 · 拼装 AIVC 的积木（可互换，按模态选）", points:[
+     ["Transformer","token + 自注意力，几乎万能；把基因当 token 即建模基因互作；加位置编码可处理 DNA 等序列；状态空间模型可生成超长 DNA。"],
+     ["CNN","图像主力：多重成像、H&E 病理、活细胞追踪；也能扫 DNA 序列找模式。正逐渐被 ViT 补充/替代。"],
+     ["Diffusion / Flow matching","生成式 + 建模时空演化，适合分化轨迹、扰动响应这类动态高维数据。"],
+     ["GNN","图数据：蛋白结构（残基为点）、组织（细胞为点、邻近连边），逐层传递邻居消息，识别空间互作与生态位。"]]},
+ ]},
+
+ {name:"⑦ 数据需求", items:[
+   {kind:"card", page:12, t:"要收什么数据", points:[
+     ["目标变了","不是为验证某个假设而采数据，而是为「广泛适用性与泛化」采数据：跨域跨模态、覆盖异质性、能区分技术噪声 / 随机生物变异 / 生理差异。"],
+     ["同时测时间与空间 + 扰动","需要活细胞成像、冷冻电镜断层、软 X 射线断层、空间组学；时间尺度从皮秒反应到数十年神经退化。"],
+     ["多模态 + 3D + 跨物种","分子×空间桥接（单细胞转录组 + 组织学）；类器官等 3D 系统可做可控扰动；跨演化物种的全器官谱。"]]},
+   {kind:"card", page:12, t:"要多少数据 / 有什么坑", points:[
+     ["规模","SRA 已超 14 PB（比训练 ChatGPT 的数据大 1000 倍），但很多冗余；缩放定律需认真研究。"],
+     ["偏倚","人和模式生物（小鼠、大肠杆菌）在数据库里占比不均，会编码强物种偏倚；性别、疾病、人群祖先偏倚也会削弱模型。模型须对来源/质量不一的数据稳健。"]]},
+ ]},
+
+ {name:"⑧ 评估 · 可解释性 · 安全", items:[
+   {kind:"card", page:13, t:"怎么建立「信任」（评估）", points:[
+     ["关键问题变了","更关键的问题不是「怎么造（how do we build）」，而是「如何相信它的能力与保真度」。需要全面、可适应、能随分布漂移演化的基准框架。"],
+     ["两条主线","① 泛化性：在没见过的细胞类型/遗传背景上表现，可用跨模态重建任务测（由形态预测表达、预测下一帧显微图）；② 发现新生物学：能否产出可实验验证的有价值假设（生长率、分子谱、被破坏的蛋白互作等）。"]]},
+   {kind:"card", page:14, t:"可解释性与人机交互", points:[
+     ["权衡","造虚拟细胞可能要放弃「完全机制化」，换取从数据泛化、预测超出观测的能力；但仍要尽力提升可解释性。"],
+     ["模块化解释","AIVC 的模块结构能定位到具体基因/蛋白/过程；可用 LLM 智能体当「虚拟科研助手」，给非专家提供直观接口。"]]},
+   {kind:"card", page:14, t:"开放协作", points:[
+     ["为什么必须开放","投入巨大、需跨学科多轮迭代，只能靠开放科学推进。需要开放数据/标准、共建平台、公开基准与统一验证。"],
+     ["三件事","① 数据反映人类多样性同时保护隐私；② 投资基础设施与模型托管平台；③ 慈善/学界/药企/AI 业界的前竞争协作 + 监管伦理共建。"]]},
+ ]},
+
+ {name:"⑨ 展望", items:[
+   {kind:"lead", page:15, html:`基因组学社区已造出 HGP、TCGA、ENCODE、GTEx、HPA、HCA 等大型参考数据集，为训练 AIVC 备好了「燃料」。作者乐观地认为：AIVC 有望<b>把生物学从「分析过去的实验」推向「在计算机里探索未来的假设」</b>，最终让我们把细胞理解为信息处理系统，不仅能模拟生命、还能<b>编程与设计</b>新的生命（已有 AI 设计 CRISPR 酶、功能蛋白、甚至整个原核基因组的先例）。全文以呼吁<b>安全、合乎伦理、可靠的开放科学</b>收尾。`},
+   {kind:"card", page:15, t:"一句话定位这篇论文在你这批文献里的角色", points:[
+     ["纲领 / 总览","这是整批「虚拟细胞」文献的<b>顶层蓝图</b>。后面那些具体工作——Nicheformer、CellPLM、Spateo、Waddington-OT、stVCR、Caliban/DeepCell、空间转录组基准与选型指南——基本都可以对号入座到本文的某个尺度（分子/细胞/多细胞）或某个能力（UR / manipulator / decoder / 评测 / 数据）。建议先读这篇建立框架，再读其余作为「填空」。"]]},
+ ]},
+];
+
+/* ============ 渲染右侧讲解 ============ */
+const guide = document.getElementById('guide-body');
+const nav = document.getElementById('nav');
+SECTIONS.forEach((sec, si)=>{
+  const h = document.createElement('div');
+  h.className='sec-h'; h.id='sec-'+si; h.textContent=sec.name;
+  guide.appendChild(h);
+  // nav chip
+  const chip=document.createElement('span');
+  chip.className='chip'; chip.textContent=sec.name.replace(/^[^ ]+ /,'').slice(0,8);
+  chip.onclick=()=>h.scrollIntoView({behavior:'smooth',block:'start'});
+  nav.insertBefore(chip, nav.firstChild);
+  sec.items.forEach(it=>{
+    const c=document.createElement('div');
+    c.className='card'+(it.kind==='fig'?' fig':'')+(it.kind==='terms'?' terms':'');
+    if(it.kind==='lead'){ c.className='card'; c.innerHTML=`<div class="top"><div class="t">核心一句话</div><a class="badge" data-pg="${it.page}">📄 P${it.page}</a></div><div class="lead">${it.html}</div>`; }
+    else{
+      let inner=`<div class="top"><div class="t">${it.t}</div><a class="badge" data-pg="${it.page}">📄 P${it.page}</a></div>`;
+      inner+='<ul>'+it.points.map(p=> it.kind==='terms'
+        ? `<li class="term"><span class="tn">${p[0]}</span>${p[1]}</li>`
+        : `<li><span class="k">${p[0]}</span>${p[1]}</li>`).join('')+'</ul>';
+      c.innerHTML=inner;
+    }
+    guide.appendChild(c);
+  });
+});
+// 页码徽章 → 跳转左侧 PDF
+guide.addEventListener('click', e=>{
+  const b=e.target.closest('.badge'); if(!b) return;
+  const n=b.dataset.pg; const el=document.getElementById('pg-'+n);
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+});
+
+/* ============ 渲染 PDF（PDF.js，本地、离线） ============ */
+const pane=document.getElementById('pdf-pane');
+const pageind=document.getElementById('pageind');
+let pdfDoc=null, pageEls=[];
+
+function b64ToBytes(b64){
+  const bin=atob(b64); const len=bin.length; const bytes=new Uint8Array(len);
+  for(let i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes;
+}
+
+async function renderAll(){
+  // file:// 下用 blob URL 创建同源 worker（绕开本地 worker 安全限制）
+  const wblob=new Blob([window.PDF_WORKER_CODE],{type:'application/javascript'});
+  pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(wblob);
+  const bytes=b64ToBytes(window.PDF_B64);
+  pdfDoc=await pdfjsLib.getDocument({data:bytes}).promise;
+  document.getElementById('load')?.remove();
+  pane.innerHTML='';
+  pageEls=[];
+  const dpr=Math.min(window.devicePixelRatio||1, 2.5);
+  const paneW=pane.clientWidth*0.96-2;
+  for(let n=1;n<=pdfDoc.numPages;n++){
+    const page=await pdfDoc.getPage(n);
+    const base=page.getViewport({scale:1});
+    const scale=paneW/base.width;
+    const vp=page.getViewport({scale});
+    const wrap=document.createElement('div'); wrap.className='pg'; wrap.id='pg-'+n;
+    const cv=document.createElement('canvas');
+    cv.width=Math.floor(vp.width*dpr); cv.height=Math.floor(vp.height*dpr);
+    const tag=document.createElement('div'); tag.className='pgnum'; tag.textContent='P'+n;
+    wrap.appendChild(cv); wrap.appendChild(tag); pane.appendChild(wrap);
+    pageEls.push(wrap);
+    await page.render({canvasContext:cv.getContext('2d'), viewport:vp,
+                       transform:dpr!==1?[dpr,0,0,dpr,0,0]:null}).promise;
+    pageind.textContent=`第 ${n}/${pdfDoc.numPages} 页`;
+  }
+  pageind.textContent=`共 ${pdfDoc.numPages} 页 · 点右侧 📄P# 跳转`;
+  trackPage();
+}
+// 滚动时更新"当前页"
+function trackPage(){
+  pane.addEventListener('scroll', ()=>{
+    const mid=pane.scrollTop+pane.clientHeight*0.35;
+    let cur=1;
+    for(let i=0;i<pageEls.length;i++){ if(pageEls[i].offsetTop<=mid) cur=i+1; }
+    pageind.textContent=`第 ${cur}/${pdfDoc.numPages} 页`;
+  });
+}
+renderAll().catch(err=>{
+  const l=document.getElementById('load');
+  if(l) l.innerHTML='<div style="color:#b00;font-size:13px;padding:20px;text-align:center">PDF 渲染失败：'+err.message+'<br><br>请用 Chrome 打开本文件夹下的 index.html。</div>';
+  console.error(err);
+});
+
+/* ============ 可拖动分隔条 ============ */
+const rz=document.getElementById('resizer');
+let drag=false;
+rz.addEventListener('mousedown',()=>{drag=true;document.body.style.userSelect='none';});
+window.addEventListener('mouseup',()=>{
+  if(drag){drag=false;document.body.style.userSelect='';
+    clearTimeout(window._rt); window._rt=setTimeout(renderAll,150);} // 重渲染保清晰
+});
+window.addEventListener('mousemove',e=>{
+  if(!drag) return;
+  const pct=Math.min(75,Math.max(30, e.clientX/window.innerWidth*100));
+  document.getElementById('pdf-pane').style.width=pct+'%';
+});
+
+/* ============ 讲解区字号缩放（A− / A+，本地记忆） ============ */
+(function(){
+  const gp=document.getElementById('guide-body');
+  let z=parseFloat(localStorage.getItem('paperGZ')||'1');
+  const apply=()=>{gp.style.zoom=z; localStorage.setItem('paperGZ',z);};
+  apply();
+  document.getElementById('fzminus').onclick=()=>{z=Math.max(0.8,Math.round((z-0.1)*10)/10);apply();};
+  document.getElementById('fzplus').onclick=()=>{z=Math.min(1.7,Math.round((z+0.1)*10)/10);apply();};
+})();
+</script>
+</body>
+</html>

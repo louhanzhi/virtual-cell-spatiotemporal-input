@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>速读 · __论文标题__</title>
+<style>
+  :root{
+    --bg:#eceef1; --panel:#fff; --ink:#1c2127; --sub:#5b6470;
+    --line:#e2e6eb; --accent:#2b6cb0; --accent-soft:#eaf2fb;
+    --fig:#fff8ec; --fig-line:#f0dcb8; --hl:#fff3cd;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       color:var(--ink);background:var(--bg);overflow:hidden;line-height:1.55}
+  /* ---- 右栏头部（原顶部 header 移入右侧栏开头） ---- */
+  #guide-head{padding:14px 16px 0}
+  #guide-head h1{font-size:18px;font-weight:700;line-height:1.4}
+  #guide-head .en{font-size:13px;color:var(--sub);font-weight:400;margin-top:2px}
+  #guide-head .meta{font-size:12px;color:var(--sub);margin-top:4px}
+  #guide-head .meta a{color:var(--accent);text-decoration:none}
+  .nav{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center;
+       position:sticky;top:0;z-index:5;background:#f6f7f9;padding:8px 16px 9px;
+       border-bottom:1px solid var(--line);box-shadow:0 2px 5px rgba(0,0,0,.04)}
+  .chip{font-size:13px;padding:3px 11px;border:1px solid var(--line);border-radius:14px;
+        background:#fafbfc;color:var(--sub);cursor:pointer;user-select:none}
+  .chip:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .pageind{margin-left:auto;font-size:13px;color:var(--sub)}
+  /* ---- main split ---- */
+  main{display:flex;height:100vh}
+  #pdf-pane{width:55%;overflow-y:auto;background:var(--bg);padding:14px 0;text-align:center}
+  #pdf-pane .pg{margin:0 auto 14px;box-shadow:0 1px 6px rgba(0,0,0,.16);background:#fff;
+                position:relative;display:inline-block;width:96%}
+  #pdf-pane canvas{display:block;width:100%;height:auto;border-radius:2px}
+  #pdf-pane .pgnum{position:absolute;top:6px;left:6px;font-size:10px;color:#fff;
+                   background:rgba(0,0,0,.45);padding:1px 6px;border-radius:8px}
+  #resizer{width:6px;cursor:col-resize;background:linear-gradient(var(--line),var(--line));
+           flex:0 0 6px}
+  #resizer:hover{background:var(--accent)}
+  #guide-pane{flex:1;overflow-y:auto;background:#f6f7f9}
+  #guide-body{padding:6px 16px 80px}
+  /* ---- guide cards ---- */
+  .sec-h{font-size:16px;font-weight:700;color:var(--accent);margin:22px 0 10px;
+         padding-bottom:5px;border-bottom:2px solid var(--accent-soft);display:flex;align-items:center;gap:7px}
+  .sec-h:first-child{margin-top:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+        padding:11px 13px;margin-bottom:11px;position:relative}
+  .card.fig{background:var(--fig);border-color:var(--fig-line)}
+  .card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px}
+  .card .t{font-size:15.5px;font-weight:600;color:var(--ink)}
+  .card.fig .t::before{content:"📊 ";}
+  .badge{flex:0 0 auto;font-size:12px;font-weight:600;color:#fff;background:var(--accent);
+         padding:2px 8px;border-radius:10px;cursor:pointer;white-space:nowrap;text-decoration:none}
+  .badge:hover{background:#1f4e7a}
+  .card p{font-size:15px;color:#2b3138;margin:3px 0}
+  .card ul{margin:5px 0 0;padding-left:2px;list-style:none}
+  .card li{font-size:15px;color:#2b3138;margin:6px 0;padding-left:16px;position:relative}
+  .card li::before{content:"";position:absolute;left:3px;top:10px;width:5px;height:5px;
+                   border-radius:50%;background:var(--accent)}
+  .card li .k{font-weight:600;color:var(--accent);margin-right:4px}
+  .lead{font-size:15.5px;color:#2b3138;line-height:1.65}
+  .lead b{color:var(--accent)}
+  /* 词汇卡 */
+  .card.terms{background:#f1f8f3;border-color:#cfe6d3}
+  .card li.term{padding-left:0;margin:11px 0}
+  .card li.term::before{display:none}
+  .tn{display:block;font-weight:700;color:#217a4b;font-size:1.03em;margin-bottom:2px}
+  .flash{animation:fl 1.4s ease}
+  @keyframes fl{0%,40%{background:var(--hl)}100%{}}
+  /* loading */
+  #load{position:absolute;left:0;right:55%;top:0;bottom:0;display:flex;align-items:center;
+        justify-content:center;flex-direction:column;gap:10px;color:var(--sub);font-size:13px;background:var(--bg)}
+  .spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--accent);
+        border-radius:50%;animation:sp 0.8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<main>
+  <div id="pdf-pane"><div id="load"><div class="spin"></div><div>正在渲染 PDF…</div></div></div>
+  <div id="resizer"></div>
+  <div id="guide-pane">
+    <div id="guide-head">
+      <h1>stVCR：从时间序列空间转录组「录像式」重建细胞的分化+迁移+增殖（含切片坐标对齐）</h1>
+      <div class="en">stVCR: Spatiotemporal dynamics of single cells</div>
+      <div class="meta">Peng, Zhou, Li（北京大学数学科学学院 / 机器学习研究中心）· Nature Methods 2026 · <a href="https://doi.org/10.1038/s41592-025" target="_blank">Nature Methods 2026</a></div>
+    </div>
+    <div class="nav" id="nav"><span class="pageind" id="pageind">PDF 加载中…</span><span class="chip" id="fzminus" title="缩小讲解字号">A−</span><span class="chip" id="fzplus" title="放大讲解字号">A+</span></div>
+    <div id="guide-body"></div>
+  </div>
+</main>
+
+<script src="./vendor/pdf.min.js"></script>
+<script src="./assets/paper-data.js"></script>
+<script src="./vendor/pdf.worker.inline.js"></script>
+<script>
+/* ============ 中文速读讲解（精读后人工撰写） ============ */
+const SECTIONS = [
+ // ===== 在此填入本论文的中文速读讲解（Claude 精读后撰写） =====
+ // 每个 section = {name:"区名", items:[...]}；item.kind ∈ 'terms' | 'lead' | 'card' | 'fig'
+ //  terms 开篇核心词汇卡（绿底）: {kind:"terms", page, t:"分组名", points:[[术语名（中英）, 大白话解释], ...]}
+ //  lead  一句话核心            : {kind:"lead",  page, html:`可含 <b>加粗</b> 的 HTML`}
+ //  card  普通段落讲解          : {kind:"card",  page, t:"标题", points:[[小标签, 说明], ...]}
+ //  fig   图表讲解（黄底📊）     : {kind:"fig",   page, t:"图N", points:[[panel如"A 分图", 讲解], ...]}
+ //  page = 该内容对应的 PDF 物理页码（点右上角 📄P# 跳到左侧该页）
+ //  ⚠️ 内容里的引号一律用中文「」或弯引号 “” —— 禁用英文直双引号，否则会截断 JS 字符串
+ {name:"🔑 核心词汇（读前必看）", items:[
+   {kind:"terms", page:1, t:"要解决的问题", points:[
+     ["时间序列空间转录组（time-series ST）","在发育的多个时间点，对组织切片做原位测序（如 Stereo-seq），既有基因表达又有空间坐标。但测序是破坏性的→只能拿到一张张「快照」，且不同时间点来自不同生物学重复→快照彼此「不配对」、坐标系还不一样。"],
+     ["核心比喻","作者把 ST 测序比作「超广角相机」：能拍照但不能录像。stVCR 的目标就是「从几张照片恢复出整段视频」——重建连续的时空发育轨迹。stVCR 全称就是 spatio-temporal Video Cassette Recorder（时空录像机）。"],
+     ["坐标系不一致的陷阱","不同时间点的切片可能被旋转/平移过。如果不先对齐就直接比坐标，会把「样本摆放角度差异」误当成「细胞真的在迁移」——产生伪运动。这是本文最强调要解决的难点。"]]},
+   {kind:"terms", page:2, t:"核心方法（动态最优传输的三件套）", points:[
+     ["动态最优传输（dynamical OT）","不是只找两个时间点之间的静态映射(static OT)，而是建一个连续的「随时间演化的分布 + 速度场」，用 PDE 描述。对应连续轨迹而非离散跳跃。基于 Benamou-Brenier 形式（最小化运动动能）。"],
+     ["刚体变换不变 OT（rigid-body invariant OT）","本文最关键的原创点：在做 OT 匹配时，同时找出最优的旋转矩阵 R 和平移向量 r，把每个时间点的坐标对齐到第一个时间点的参考坐标系。这样就消除了「切片摆放角度」造成的伪迁移。这也是它区别于 PASTE/Moscot(用 GW-OT) 的地方。"],
+     ["非平衡 OT（unbalanced OT）","因为细胞会分裂和凋亡，「质量」不守恒。用非平衡设定建模细胞数量变化。"],
+     ["三个神经网络","学三个速度场：v=物理空间迁移速度、p=基因表达空间的 RNA velocity、g=增殖率。损失=动力学损失+匹配损失+(可选)空间结构保持损失。"]]},
+   {kind:"terms", page:2, t:"可选先验 & 下游分析", points:[
+     ["生物先验（biological prior）","当观测时间点少、间隔大时(真实 ST 数据常如此)，可注入已知的细胞类型转变关系（如 CNS→CNS）来纠正错误推断。"],
+     ["空间结构保持先验","让指定器官/细胞类型的相邻细胞有相似的迁移速度，防止结构被任意撕裂变形。"],
+     ["四类下游分析","① 插值与预测(未观测时刻/未来)；② 基因-空间互作(算 Jacobian 矩阵)；③ 增殖驱动基因 + 迁移方向；④ 谱系推断(训练时间依赖分类器注释生成的细胞)。"]]},
+ ]},
+
+ {name:"📌 一句话核心", items:[
+   {kind:"lead", page:1, html:`stVCR（北大数学院，Nature Methods 2026）是一个<b>生成式深度学习模型</b>，用<b>动态最优传输(OT)</b>从时间序列空间转录组的「快照」里，<b>端到端、同时重建</b>：细胞的连续分化、增殖、物理空间迁移，以及不同切片的坐标对齐。它的<b>最大原创点是「刚体变换不变 OT」</b>——边对齐切片坐标系、边推断动力学，从根上消除了「切片摆放角度差异」造成的伪迁移（这是它区别于 PASTE/Moscot 用 GW-OT 的地方，也是首个对时间序列 ST 用动态 OT 建模的算法）。还能注入生物先验和空间结构先验。在模拟数据、<b>蝾螈脑再生、3D 果蝇胚胎</b>上验证，优于静态 OT 和线性插值。`},
+ ]},
+
+ {name:"① Fig 1：stVCR 总览", items:[
+   {kind:"fig", page:4, t:"Figure 1 · stVCR 框架", points:[
+     ["A 三种数据三种处理","基因表达用 Wasserstein OT；空间坐标用刚体变换不变 OT（边对齐边建模）；细胞数量用非平衡 OT（处理分裂/凋亡）。"],
+     ["B 可选先验","已知类型转变先验 + 特定细胞类型/器官的空间结构保持先验。"],
+     ["C 统一为动态 OT","把三必需模块+两可选模块统一进一个 transport-with-growth PDE：∂ρ/∂t + ∇·((v,p)ρ) = gρ，其中 v=物理迁移速度、p=RNA velocity、g=增殖率，都用神经网络学。"],
+     ["E 下游分析","插值预测、基因-空间-空间互作(Jacobian)、增殖驱动基因+迁移方向、谱系推断。"]]},
+ ]},
+
+ {name:"② Fig 2：模拟数据基准", items:[
+   {kind:"fig", page:5, t:"Figure 2 · 模拟时间序列 ST 基准", points:[
+     ["设计","三组细胞、三个基因(Red/Green/Blue)。Red-Green 互为开关、对增殖有相反影响；空间位置不同决定命运不同。刻意旋转不同角度模拟切片旋转。"],
+     ["两个必要性论证","① 没有空间信息→区分不了初始低表达但空间不同的第二、三组→错误轨迹；② 忽略增殖→把小数量组错误连到大数量组。"],
+     ["结果","stVCR 从第一时刻演化出的动力学与真实一致；对齐后细胞只水平移动不旋转(说明找到了正确刚体变换)；准确插值未观测时刻、预测未来；准确恢复基因互作、迁移对表达的影响、增殖率空间分布。可扩展、对超参数稳健。"]]},
+ ]},
+
+ {name:"③ Fig 3-4：蝾螈脑再生", items:[
+   {kind:"fig", page:8, t:"Figure 3 · 重建蝾螈脑再生时空动态", points:[
+     ["数据","Stereo-seq 测的蝾螈脑损伤后再生，取 2/5/10/15/20 DPI(损伤后天数) 5 个时间点。"],
+     ["对齐","把各时间点坐标对齐到同一参考系，明显改善混合(尤其 20 DPI)——证明对齐的必要性。"],
+     ["发现","伤口附近细胞(尤其反应性室管膜胶质细胞 reaEGC、小胶质 MCG)向伤口迁移；损伤半球增殖率显著高于未损伤半球(补偿损失)。"],
+     ["谱系","早期 sfrpEGC/wntEGC→reaEGC，后期 reaEGC→成熟神经元；细胞数量非单调变化，与原研究一致。"]]},
+   {kind:"fig", page:10, t:"Figure 4 · 基因层面机制", points:[
+     ["迁移驱动基因","GO 富集到神经元迁移、负调控同型细胞黏附；找到 GFAP、TNC、PTN、SLC1A3 等 EGC marker 基因促进迁移。"],
+     ["增殖驱动基因","reaEGC 中找到 FABP7、SFRP1 等促增殖。"],
+     ["时变 GRN","reaEGC 中这些基因早期(2DPI)互相抑制、后期(15DPI)转为互相促进——说明基因调控关系随时间、随细胞类型、随空间位置变化（静态 OT 做不到）。"]]},
+ ]},
+
+ {name:"④ Fig 5：3D 果蝇 + 先验", items:[
+   {kind:"fig", page:12, t:"Figure 5 · 3D 果蝇胚胎与器官（带先验）", points:[
+     ["先验的必要性","用模拟数据证明：观测少、间隔大时，没有先验会推出错误的 type1→type3→type2；加上正确的状态转变先验后插值更接近真实。理论上还证明了采样间隔→0 时 stVCR 收敛到真实动力学。"],
+     ["3D 果蝇","只有 E7-9h、E9-10h 两个时间点，9 个组织。加 CNS/midgut/amnioserosa 转变先验 + CNS/midgut 空间结构先验，对齐并重建两时刻间动态。"],
+     ["对比 Spateo/Moscot","CNS 迁移轨迹：stVCR 让后部细胞沿 CNS 内部结构平滑迁向前部；Spateo(静态 OT+线性插值)会让后部细胞先断开再合并；Moscot(KL 惩罚)会让细胞聚到少数位置。stVCR 的连续动态更合理。"]]},
+ ]},
+
+ {name:"⑤ 定位与意义", items:[
+   {kind:"lead", page:12, html:`定位：stVCR 是<b>「时空动态建模」的集大成方法</b>——把第 7 篇 Waddington-OT 的「时间维度 OT」与第 6 篇 Spateo 的「空间维度对齐/迁移」<b>统一进一个动态 OT 框架</b>，并用「刚体变换不变 OT」解决了二者都没完全解决的「切片坐标系不一致」问题。它同时建模分化(基因空间)+迁移(物理空间)+增殖(数量)，是对第 1 篇 CZI 纲领文里<b>多细胞尺度 + 动态(manipulator)</b>的直接技术实现。读这篇时建议把第 6/7 篇放一起对照：Waddington-OT 给思想、Spateo 给空间重建、stVCR 把两者合一并补上坐标对齐这块最后的拼图。`},
+ ]},
+];
+
+/* ============ 渲染右侧讲解 ============ */
+const guide = document.getElementById('guide-body');
+const nav = document.getElementById('nav');
+SECTIONS.forEach((sec, si)=>{
+  const h = document.createElement('div');
+  h.className='sec-h'; h.id='sec-'+si; h.textContent=sec.name;
+  guide.appendChild(h);
+  // nav chip
+  const chip=document.createElement('span');
+  chip.className='chip'; chip.textContent=sec.name.replace(/^[^ ]+ /,'').slice(0,8);
+  chip.onclick=()=>h.scrollIntoView({behavior:'smooth',block:'start'});
+  nav.insertBefore(chip, nav.firstChild);
+  sec.items.forEach(it=>{
+    const c=document.createElement('div');
+    c.className='card'+(it.kind==='fig'?' fig':'')+(it.kind==='terms'?' terms':'');
+    if(it.kind==='lead'){ c.className='card'; c.innerHTML=`<div class="top"><div class="t">核心一句话</div><a class="badge" data-pg="${it.page}">📄 P${it.page}</a></div><div class="lead">${it.html}</div>`; }
+    else{
+      let inner=`<div class="top"><div class="t">${it.t}</div><a class="badge" data-pg="${it.page}">📄 P${it.page}</a></div>`;
+      inner+='<ul>'+it.points.map(p=> it.kind==='terms'
+        ? `<li class="term"><span class="tn">${p[0]}</span>${p[1]}</li>`
+        : `<li><span class="k">${p[0]}</span>${p[1]}</li>`).join('')+'</ul>';
+      c.innerHTML=inner;
+    }
+    guide.appendChild(c);
+  });
+});
+// 页码徽章 → 跳转左侧 PDF
+guide.addEventListener('click', e=>{
+  const b=e.target.closest('.badge'); if(!b) return;
+  const n=b.dataset.pg; const el=document.getElementById('pg-'+n);
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+});
+
+/* ============ 渲染 PDF（PDF.js，本地、离线） ============ */
+const pane=document.getElementById('pdf-pane');
+const pageind=document.getElementById('pageind');
+let pdfDoc=null, pageEls=[];
+
+function b64ToBytes(b64){
+  const bin=atob(b64); const len=bin.length; const bytes=new Uint8Array(len);
+  for(let i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes;
+}
+
+async function renderAll(){
+  // file:// 下用 blob URL 创建同源 worker（绕开本地 worker 安全限制）
+  const wblob=new Blob([window.PDF_WORKER_CODE],{type:'application/javascript'});
+  pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(wblob);
+  const bytes=b64ToBytes(window.PDF_B64);
+  pdfDoc=await pdfjsLib.getDocument({data:bytes}).promise;
+  document.getElementById('load')?.remove();
+  pane.innerHTML='';
+  pageEls=[];
+  const dpr=Math.min(window.devicePixelRatio||1, 2.5);
+  const paneW=pane.clientWidth*0.96-2;
+  for(let n=1;n<=pdfDoc.numPages;n++){
+    const page=await pdfDoc.getPage(n);
+    const base=page.getViewport({scale:1});
+    const scale=paneW/base.width;
+    const vp=page.getViewport({scale});
+    const wrap=document.createElement('div'); wrap.className='pg'; wrap.id='pg-'+n;
+    const cv=document.createElement('canvas');
+    cv.width=Math.floor(vp.width*dpr); cv.height=Math.floor(vp.height*dpr);
+    const tag=document.createElement('div'); tag.className='pgnum'; tag.textContent='P'+n;
+    wrap.appendChild(cv); wrap.appendChild(tag); pane.appendChild(wrap);
+    pageEls.push(wrap);
+    await page.render({canvasContext:cv.getContext('2d'), viewport:vp,
+                       transform:dpr!==1?[dpr,0,0,dpr,0,0]:null}).promise;
+    pageind.textContent=`第 ${n}/${pdfDoc.numPages} 页`;
+  }
+  pageind.textContent=`共 ${pdfDoc.numPages} 页 · 点右侧 📄P# 跳转`;
+  trackPage();
+}
+// 滚动时更新"当前页"
+function trackPage(){
+  pane.addEventListener('scroll', ()=>{
+    const mid=pane.scrollTop+pane.clientHeight*0.35;
+    let cur=1;
+    for(let i=0;i<pageEls.length;i++){ if(pageEls[i].offsetTop<=mid) cur=i+1; }
+    pageind.textContent=`第 ${cur}/${pdfDoc.numPages} 页`;
+  });
+}
+renderAll().catch(err=>{
+  const l=document.getElementById('load');
+  if(l) l.innerHTML='<div style="color:#b00;font-size:13px;padding:20px;text-align:center">PDF 渲染失败：'+err.message+'<br><br>请用 Chrome 打开本文件夹下的 index.html。</div>';
+  console.error(err);
+});
+
+/* ============ 可拖动分隔条 ============ */
+const rz=document.getElementById('resizer');
+let drag=false;
+rz.addEventListener('mousedown',()=>{drag=true;document.body.style.userSelect='none';});
+window.addEventListener('mouseup',()=>{
+  if(drag){drag=false;document.body.style.userSelect='';
+    clearTimeout(window._rt); window._rt=setTimeout(renderAll,150);} // 重渲染保清晰
+});
+window.addEventListener('mousemove',e=>{
+  if(!drag) return;
+  const pct=Math.min(75,Math.max(30, e.clientX/window.innerWidth*100));
+  document.getElementById('pdf-pane').style.width=pct+'%';
+});
+
+/* ============ 讲解区字号缩放（A− / A+，本地记忆） ============ */
+(function(){
+  const gp=document.getElementById('guide-body');
+  let z=parseFloat(localStorage.getItem('paperGZ')||'1');
+  const apply=()=>{gp.style.zoom=z; localStorage.setItem('paperGZ',z);};
+  apply();
+  document.getElementById('fzminus').onclick=()=>{z=Math.max(0.8,Math.round((z-0.1)*10)/10);apply();};
+  document.getElementById('fzplus').onclick=()=>{z=Math.min(1.7,Math.round((z+0.1)*10)/10);apply();};
+})();
+</script>
+</body>
+</html>

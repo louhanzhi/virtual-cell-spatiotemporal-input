@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>速读 · __论文标题__</title>
+<style>
+  :root{
+    --bg:#eceef1; --panel:#fff; --ink:#1c2127; --sub:#5b6470;
+    --line:#e2e6eb; --accent:#2b6cb0; --accent-soft:#eaf2fb;
+    --fig:#fff8ec; --fig-line:#f0dcb8; --hl:#fff3cd;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       color:var(--ink);background:var(--bg);overflow:hidden;line-height:1.55}
+  /* ---- 右栏头部（原顶部 header 移入右侧栏开头） ---- */
+  #guide-head{padding:14px 16px 0}
+  #guide-head h1{font-size:18px;font-weight:700;line-height:1.4}
+  #guide-head .en{font-size:13px;color:var(--sub);font-weight:400;margin-top:2px}
+  #guide-head .meta{font-size:12px;color:var(--sub);margin-top:4px}
+  #guide-head .meta a{color:var(--accent);text-decoration:none}
+  .nav{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center;
+       position:sticky;top:0;z-index:5;background:#f6f7f9;padding:8px 16px 9px;
+       border-bottom:1px solid var(--line);box-shadow:0 2px 5px rgba(0,0,0,.04)}
+  .chip{font-size:13px;padding:3px 11px;border:1px solid var(--line);border-radius:14px;
+        background:#fafbfc;color:var(--sub);cursor:pointer;user-select:none}
+  .chip:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .pageind{margin-left:auto;font-size:13px;color:var(--sub)}
+  /* ---- main split ---- */
+  main{display:flex;height:100vh}
+  #pdf-pane{width:55%;overflow-y:auto;background:var(--bg);padding:14px 0;text-align:center}
+  #pdf-pane .pg{margin:0 auto 14px;box-shadow:0 1px 6px rgba(0,0,0,.16);background:#fff;
+                position:relative;display:inline-block;width:96%}
+  #pdf-pane canvas{display:block;width:100%;height:auto;border-radius:2px}
+  #pdf-pane .pgnum{position:absolute;top:6px;left:6px;font-size:10px;color:#fff;
+                   background:rgba(0,0,0,.45);padding:1px 6px;border-radius:8px}
+  #resizer{width:6px;cursor:col-resize;background:linear-gradient(var(--line),var(--line));
+           flex:0 0 6px}
+  #resizer:hover{background:var(--accent)}
+  #guide-pane{flex:1;overflow-y:auto;background:#f6f7f9}
+  #guide-body{padding:6px 16px 80px}
+  /* ---- guide cards ---- */
+  .sec-h{font-size:16px;font-weight:700;color:var(--accent);margin:22px 0 10px;
+         padding-bottom:5px;border-bottom:2px solid var(--accent-soft);display:flex;align-items:center;gap:7px}
+  .sec-h:first-child{margin-top:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+        padding:11px 13px;margin-bottom:11px;position:relative}
+  .card.fig{background:var(--fig);border-color:var(--fig-line)}
+  .card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px}
+  .card .t{font-size:15.5px;font-weight:600;color:var(--ink)}
+  .card.fig .t::before{content:"📊 ";}
+  .badge{flex:0 0 auto;font-size:12px;font-weight:600;color:#fff;background:var(--accent);
+         padding:2px 8px;border-radius:10px;cursor:pointer;white-space:nowrap;text-decoration:none}
+  .badge:hover{background:#1f4e7a}
+  .card p{font-size:15px;color:#2b3138;margin:3px 0}
+  .card ul{margin:5px 0 0;padding-left:2px;list-style:none}
+  .card li{font-size:15px;color:#2b3138;margin:6px 0;padding-left:16px;position:relative}
+  .card li::before{content:"";position:absolute;left:3px;top:10px;width:5px;height:5px;
+                   border-radius:50%;background:var(--accent)}
+  .card li .k{font-weight:600;color:var(--accent);margin-right:4px}
+  .lead{font-size:15.5px;color:#2b3138;line-height:1.65}
+  .lead b{color:var(--accent)}
+  /* 词汇卡 */
+  .card.terms{background:#f1f8f3;border-color:#cfe6d3}
+  .card li.term{padding-left:0;margin:11px 0}
+  .card li.term::before{display:none}
+  .tn{display:block;font-weight:700;color:#217a4b;font-size:1.03em;margin-bottom:2px}
+  .flash{animation:fl 1.4s ease}
+  @keyframes fl{0%,40%{background:var(--hl)}100%{}}
+  /* loading */
+  #load{position:absolute;left:0;right:55%;top:0;bottom:0;display:flex;align-items:center;
+        justify-content:center;flex-direction:column;gap:10px;color:var(--sub);font-size:13px;background:var(--bg)}
+  .spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--accent);
+        border-radius:50%;animation:sp 0.8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<main>
+  <div id="pdf-pane"><div id="load"><div class="spin"></div><div>正在渲染 PDF…</div></div></div>
+  <div id="resizer"></div>
+  <div id="guide-pane">
+    <div id="guide-head">
+      <h1>多尺度 AI 虚拟细胞综述：把 AIVC 拆成「基因-蛋白-通路-细胞」四尺度的工程蓝图</h1>
+      <div class="en">Artificial intelligence-enabled multi-scale virtual cell: perspective, challenges, and opportunities</div>
+      <div class="meta">Jiang, Huang, Bi … Sun, Zhang（中国海洋大学 / 南京大学 / 青岛大学 / 曼彻斯特大学）· Briefings in Bioinformatics 27(2), bbag104 · 2026-03-08 · <a href="https://doi.org/10.1093/bib/bbag104" target="_blank">doi:10.1093/bib/bbag104</a></div>
+    </div>
+    <div class="nav" id="nav"><span class="pageind" id="pageind">PDF 加载中…</span><span class="chip" id="fzminus" title="缩小讲解字号">A−</span><span class="chip" id="fzplus" title="放大讲解字号">A+</span></div>
+    <div id="guide-body"></div>
+  </div>
+</main>
+
+<script src="./vendor/pdf.min.js"></script>
+<script src="./assets/paper-data.js"></script>
+<script src="./vendor/pdf.worker.inline.js"></script>
+<script>
+/* ============ 中文速读讲解（精读后人工撰写） ============ */
+const SECTIONS = [
+ // ===== 在此填入本论文的中文速读讲解（Claude 精读后撰写） =====
+ // 每个 section = {name:"区名", items:[...]}；item.kind ∈ 'terms' | 'lead' | 'card' | 'fig'
+ //  terms 开篇核心词汇卡（绿底）: {kind:"terms", page, t:"分组名", points:[[术语名（中英）, 大白话解释], ...]}
+ //  lead  一句话核心            : {kind:"lead",  page, html:`可含 <b>加粗</b> 的 HTML`}
+ //  card  普通段落讲解          : {kind:"card",  page, t:"标题", points:[[小标签, 说明], ...]}
+ //  fig   图表讲解（黄底📊）     : {kind:"fig",   page, t:"图N", points:[[panel如"A 分图", 讲解], ...]}
+ //  page = 该内容对应的 PDF 物理页码（点右上角 📄P# 跳到左侧该页）
+ //  ⚠️ 内容里的引号一律用中文「」或弯引号 “” —— 禁用英文直双引号，否则会截断 JS 字符串
+ {name:"🔑 核心词汇（读前必看）", items:[
+   {kind:"terms", page:1, t:"核心框架", points:[
+     ["AIVC（AI 虚拟细胞）","本文把它定义为：一个多尺度、AI 驱动的计算框架，通过多组学/多模态数据融合，把「基因→蛋白→通路→细胞」四层生物层级整合起来，目标是建一个能模拟细胞功能与行为的「数字孪生」。强调它不是某个具体软件，而是一种跨学科研究范式。"],
+     ["四尺度（gene-protein-pathway-cell）","本文最核心的拆法：基因尺度（DNA 序列、转录调控、表观修饰）→ 蛋白尺度（合成、修饰、互作网络）→ 通路尺度（信号级联，把信号翻译成功能响应）→ 细胞尺度（整合一切，表现为细胞的空间/互作/行为）。相邻尺度两两耦合。"],
+     ["数字孪生（digital twin）","在计算机里给细胞（甚至病人）建一个会随数据更新的虚拟副本，用来模拟、预测、优化干预。"],
+     ["跨尺度耦合（cross-scale coupling）","上一尺度的小变化怎样非线性地传到上一层。文中举例 KRAS 热点突变→锁死 GTP 活性态→异常激活 MAPK/PI3K 通路→改变细胞行为，就是一条「基因→蛋白→通路→细胞」全链条。"]]},
+   {kind:"terms", page:6, t:"三大技术模块（本文的工程主张）", points:[
+     ["多尺度表示描述符（descriptors）","负责把每个尺度的实体数字化：基因用 label/k-mer/one-hot 编码；蛋白用 1D 序列 / 2D 拓扑 / 3D 结构（几何等变 GNN）；通路建成互作图；细胞建成器官网络动态图。还要定义跨尺度关联规则。"],
+     ["自适应表示编码器（encoders）","学习核心：用深度网络融合多源数据。按尺度设功能子模块（基因/蛋白/通路/细胞各一个），如基因模块用 Transformer-XL 处理超长序列、蛋白模块用「结构-动力学」双流、通路模块用 GNN+神经ODE、细胞模块借鉴 scFoundation/CellFM 并把细胞器当「智能体」。"],
+     ["动态功能预测器（predictor）","管时间同步和多功能调控。难点是不同尺度时间尺度差异巨大（蛋白构象变化在皮秒、基因表达在小时），用最优传输 OT、时序模型（MTPNet/MSFformer/HiMTM）做跨尺度时间对齐。"]]},
+   {kind:"terms", page:11, t:"几个反复出现的工具/概念", points:[
+     ["最优传输 OT（optimal transport）","一种把一个分布「搬运」成另一个分布的数学工具，常用于跨时间点匹配细胞状态。静态 OT（scEGOT）、动态 OT（TrajectoryNet）、非平衡 OT（TIGON，能处理细胞增殖/死亡导致的数量变化）。与第7篇 Waddington-OT 同源思想。"],
+     ["机制式 vs 数据驱动 vs 混合","三类建模法：机制式（JCVI-syn3A、BoolNet，靠显式生化规则，可解释但泛化差）；数据驱动（Geneformer、scGPT，靠大数据学隐式规律，泛化好但黑箱）；混合（UCE、GeneCompass，两者结合）。"],
+     ["基础模型举例","scFoundation（清华，1 亿参数，5000 万细胞，xTrimoGene 骨架，读深感知预训练）；CellFM（1 亿细胞，8 亿参数，RetNet 架构）；GET（染色质可及性→213 种细胞类型基因表达）。"]]},
+ ]},
+
+ {name:"📌 一句话核心", items:[
+   {kind:"lead", page:1, html:`这是一篇 <b>系统综述</b>（中国海洋大学等团队，2026 年 Briefings in Bioinformatics）。它与第 1 篇 CZI 的纲领文互补：CZI 那篇讲「为什么/愿景」，这篇讲<b>「具体怎么拆、怎么搭」</b>。核心贡献三点——① 提出统一定义和把 AIVC 拆成<b>「基因→蛋白→通路→细胞」四尺度 + 相邻尺度两两耦合</b>；② 给出三大技术模块（多尺度描述符 / 自适应编码器 / 动态功能预测器）的工程构建路线，并按尺度整理评估指标；③ 系统汇总现有模型（Table 1）与数据集（Table 2），讨论数据异质性、可解释性、算力三大挑战，并展望疾病研究、药物发现、生物工程三大应用。`},
+ ]},
+
+ {name:"① 引言：从机制式到数据驱动", items:[
+   {kind:"card", page:1, t:"虚拟细胞的演进", points:[
+     ["老一代","VCell、E-Cell、CellML 等机制式软件，靠已知生化规则模拟。VCell 重跨细胞类型适配，E-Cell 重细胞器代谢，CellML 是标准化标记语言解决跨平台。"],
+     ["新一代 = AIVC","随多组学数据爆发 + AI 进步，从纯机制模拟转向数据驱动预测的融合。例：JCVI-syn3A 全细胞模拟、scFoundation、GET。"]]},
+   {kind:"card", page:1, t:"现有 AIVC 的三大痛点（全文要解决的）", points:[
+     ["跨尺度耦合的数学建模难","微观响应跨尺度时发生复杂非线性转变。"],
+     ["多模态数据异质融合瓶颈","基因/蛋白/通路对应不同模态，语义错配，难以协同互补。"],
+     ["多尺度交互的算力困境","跨尺度参数耦合→维度爆炸；生物系统的容错性与确定性建模本质冲突。"]]},
+   {kind:"card", page:1, t:"时代背景", points:[
+     ["大项目","CZI「十亿细胞计划」、Arc Institute 联合斯坦福等发起首个「虚拟细胞挑战赛（Virtual Cell Challenge）」——标志 AIVC 进入关键机遇期。"]]},
+ ]},
+
+ {name:"② Fig 1 + 定义与四尺度耦合", items:[
+   {kind:"fig", page:5, t:"Figure 1 · AIVC 的功能特征", points:[
+     ["总览","展示 AIVC 如何整合多组学数据 + 跨尺度动态建模，构成一个模拟细胞过程的数字平台，突破传统实验在时空分辨率上的限制，实现实时模拟、调控机制预测、疾病关键节点识别。"]]},
+   {kind:"card", page:5, t:"四尺度的相邻耦合（全链条调控网络）", points:[
+     ["基因→蛋白","基因表达量直接决定蛋白合成量；表观修饰改变染色质可及性影响转录。例 BRCA1 突变→蛋白功能丧失→DNA 修复受损。"],
+     ["蛋白→通路","蛋白修饰态调控通路活性。例 AKT 磷酸化激活 PI3K/AKT 通路促存活；Caspase 激活启动凋亡。"],
+     ["通路→细胞","通路动态最终决定细胞行为与命运。例 TGF-β 通路激活诱导上皮-间质转化，增强肿瘤迁移；p53 通路激活触发细胞周期阻滞或凋亡。"]]},
+ ]},
+
+ {name:"③ Table 1 & 2：模型与数据集清单", items:[
+   {kind:"fig", page:2, t:"Table 1 · AIVC 相关模型汇总（P2-4）", points:[
+     ["怎么读","逐模型列出：训练数据/覆盖范围/数据模态/关键贡献/输出/优势/局限/基准任务/模型类型。是这批文献里最实用的「模型速查表」。"],
+     ["代表模型","机制式 JCVI-syn3A、BoolNet、BioNetGen、CellOrganizer；数据驱动 iSEEEK、tGPT、Geneformer、scBERT、scGPT、scFoundation、CellFM；混合 UCE、GET、GeneCompass。"]]},
+   {kind:"fig", page:6, t:"Table 2 · AIVC 相关数据集汇总（P6-7）", points:[
+     ["基因尺度","ClinVar（600万+变异-疾病关联）、HGMD、ProThermDB/FireProtDB（蛋白突变稳定性）、UK Biobank、GWAS Catalog。"],
+     ["蛋白尺度","PDB（20万+实验结构）、UniProt（50万+条目）、SKEMPI 2.0（突变对 PPI 影响）、PDBbind/MISATO（药物-靶点）。"],
+     ["通路尺度","STRING、BioGRID、KIBA/Davis/Human（亲和力）。"],
+     ["细胞尺度","HCA（6000万+细胞）、Tabula Sapiens、Tahoe-100M（1亿单细胞扰动图谱）、scBaseCount、IDR（成像）、CellPhoneDB（细胞通讯）。"]]},
+ ]},
+
+ {name:"④ Fig 2 + 三大技术模块", items:[
+   {kind:"fig", page:7, t:"Figure 2 · AIVC 技术架构概念图", points:[
+     ["三步走","① 水平模态融合（同一尺度内对齐序列/结构/动态模态）；② 垂直尺度穿透（建跨层特征金字塔，低尺度向上注意力引导、高尺度向下反馈）；③ 用可扩展动态架构完成预测任务。"]]},
+   {kind:"card", page:8, t:"模块一 · 多尺度表示描述符", points:[
+     ["基因编码","label / k-mer / one-hot；k-mer one-hot + CNN-LSTM 组合表现最好。"],
+     ["蛋白表示","1D 序列 / 2D 残基互作图 / 3D 结构；几何等变 GNN 联合处理序列与 3D 结构、保证姿态不变。"],
+     ["通路 & 细胞","通路建成功能互作网络（节点继承上游蛋白/基因表示）；细胞尺度最复杂，把细胞器（线粒体/内质网）建成动态图，节点带功能状态、边带物质交换。"]]},
+   {kind:"card", page:10, t:"模块二 · 自适应表示编码器（四个功能子模块）", points:[
+     ["基因子模块","Transformer-XL 破上下文长度限制处理百万碱基；引入 CRISPR 筛选数据当监督信号（CRISMER 等）。"],
+     ["蛋白子模块","「结构-动力学」双流：结构流基于 AlphaFold 构象用 3D-GCN；动力学流学分子动力学轨迹（DynPred 预测 RMSF）；对比学习对齐两流。"],
+     ["通路子模块","GNN + 神经 ODE 捕捉高度非线性；异质图注意力（EGADL）跨多跳传信息。"],
+     ["细胞子模块","借鉴 scFoundation/CellFM；把细胞器当自治智能体，Transformer 协调器建模器官间互作。"]]},
+   {kind:"card", page:11, t:"模块三 · 动态功能预测器", points:[
+     ["时间尺度同步","核心难点：各尺度时间差异大。用 OT（scEGOT/TrajectoryNet/TIGON）+ 时序模型（MTPNet 多尺度分解、MSFformer 金字塔卷积、HiMTM 跨尺度掩码注意力）对齐快慢事件。"],
+     ["多组件动态调控","仿生可编程闭环：微调组件库 + 动态分类控制器 + 元学习优化器；用 Sigmoid 模拟转录因子剂量协同、Softmax 模拟结合位点竞争抑制、循环跳连模拟负反馈稳态。"]]},
+ ]},
+
+ {name:"⑤ 评估指标（按尺度分）", items:[
+   {kind:"card", page:13, t:"四尺度各自的评估指标", points:[
+     ["基因尺度","以「虚拟细胞挑战赛」为基准：DES（差异表达预测准确度）、PDS（区分扰动类型能力）、MAE（全表达谱误差）。"],
+     ["蛋白尺度","借 CAFA 挑战：AUPR、F1-max、PCC（突变对稳定性的影响）。"],
+     ["通路尺度","MCC、F1-Score、Spearman（适合极度不平衡的 PPI/DPI 任务）。"],
+     ["细胞尺度","ARI、轮廓系数 Silhouette、Macro-F1（细胞聚类与分类）。"],
+     ["还需补充","跨尺度联合指标（反映疾病特异机制全链条）、计算效率、跨域可扩展性。"]]},
+ ]},
+
+ {name:"⑥ 三大应用 + 挑战展望", items:[
+   {kind:"card", page:14, t:"三大应用场景（每个都给了「模型组合流水线」）", points:[
+     ["疾病研究","全链条「基因突变→细胞表型」，如阿尔茨海默病 Aβ/Tau 时空传播。流水线：EVE（基因致病性）→ AlphaFold（构象）→ BioNetGen（通路）→ CellFM（表型）。"],
+     ["药物发现","构建百万虚拟患者做数字临床试验；预测 KRAS G12C 抑制剂 AMG 510 变构位点；早期心毒性预警。"],
+     ["生物工程","几何深度学习生成全新蛋白骨架、设计催化口袋；预测肠道类器官隐窝-绒毛结构调控组合。"]]},
+   {kind:"card", page:15, t:"四大挑战", points:[
+     ["机制 vs 数据融合","确定性机制规则与概率性数据输出难调和、不确定性如何跨流水线传播。提出「机制当先验约束 + 数据当自适应探索 + 双向反馈校验」的融合框架。"],
+     ["数据质量与异质性","缺乏面向全链条模拟的专用数据集与统一评测；单细胞基因检测缺失、空间组学分辨率不足；跨物种差异（小鼠药酶谱 ≠ 人）。"],
+     ["黑箱与泛化","GNN 预测的 KRAS 结合位点与已知变构域不重叠→阻碍临床转化；罕见病样本少→过拟合。"],
+     ["算力与时效","全细胞动态模拟涉及上千生化反应、需实时解微分方程，远超普通实验室算力。"]]},
+   {kind:"lead", page:15, html:`展望三大趋势：<b>量子计算</b>提供算力支撑全细胞实时模拟、<b>可解释 AI</b>（如 ExplainableFold 可视化残基互作路径）打开黑箱、<b>联邦学习</b>等隐私计算实现多中心协作建模而不共享原始数据。<br>定位：这是本批文献里最像「<b>AIVC 工程施工手册 + 模型/数据集速查表</b>」的一篇，适合在读完 CZI 纲领文后，用来落地到具体技术选型。`},
+ ]},
+];
+
+/* ============ 渲染右侧讲解 ============ */
+const guide = document.getElementById('guide-body');
+const nav = document.getElementById('nav');
+SECTIONS.forEach((sec, si)=>{
+  const h = document.createElement('div');
+  h.className='sec-h'; h.id='sec-'+si; h.textContent=sec.name;
+  guide.appendChild(h);
+  // nav chip
+  const chip=document.createElement('span');
+  chip.className='chip'; chip.textContent=sec.name.replace(/^[^ ]+ /,'').slice(0,8);
+  chip.onclick=()=>h.scrollIntoView({behavior:'smooth',block:'start'});
+  nav.insertBefore(chip, nav.firstChild);
+  sec.items.forEach(it=>{
+    const c=document.createElement('div');
+    c.className='card'+(it.kind==='fig'?' fig':'')+(it.kind==='terms'?' terms':'');
+    if(it.kind==='lead'){ c.className='card'; c.innerHTML=`<div class="top"><div class="t">核心一句话</div><a class="badge" data-pg="${it.page}">📄 P${it.page}</a></div><div class="lead">${it.html}</div>`; }
+    else{
+      let inner=`<div class="top"><div class="t">${it.t}</div><a class="badge" data-pg="${it.page}">📄 P${it.page}</a></div>`;
+      inner+='<ul>'+it.points.map(p=> it.kind==='terms'
+        ? `<li class="term"><span class="tn">${p[0]}</span>${p[1]}</li>`
+        : `<li><span class="k">${p[0]}</span>${p[1]}</li>`).join('')+'</ul>';
+      c.innerHTML=inner;
+    }
+    guide.appendChild(c);
+  });
+});
+// 页码徽章 → 跳转左侧 PDF
+guide.addEventListener('click', e=>{
+  const b=e.target.closest('.badge'); if(!b) return;
+  const n=b.dataset.pg; const el=document.getElementById('pg-'+n);
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+});
+
+/* ============ 渲染 PDF（PDF.js，本地、离线） ============ */
+const pane=document.getElementById('pdf-pane');
+const pageind=document.getElementById('pageind');
+let pdfDoc=null, pageEls=[];
+
+function b64ToBytes(b64){
+  const bin=atob(b64); const len=bin.length; const bytes=new Uint8Array(len);
+  for(let i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes;
+}
+
+async function renderAll(){
+  // file:// 下用 blob URL 创建同源 worker（绕开本地 worker 安全限制）
+  const wblob=new Blob([window.PDF_WORKER_CODE],{type:'application/javascript'});
+  pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(wblob);
+  const bytes=b64ToBytes(window.PDF_B64);
+  pdfDoc=await pdfjsLib.getDocument({data:bytes}).promise;
+  document.getElementById('load')?.remove();
+  pane.innerHTML='';
+  pageEls=[];
+  const dpr=Math.min(window.devicePixelRatio||1, 2.5);
+  const paneW=pane.clientWidth*0.96-2;
+  for(let n=1;n<=pdfDoc.numPages;n++){
+    const page=await pdfDoc.getPage(n);
+    const base=page.getViewport({scale:1});
+    const scale=paneW/base.width;
+    const vp=page.getViewport({scale});
+    const wrap=document.createElement('div'); wrap.className='pg'; wrap.id='pg-'+n;
+    const cv=document.createElement('canvas');
+    cv.width=Math.floor(vp.width*dpr); cv.height=Math.floor(vp.height*dpr);
+    const tag=document.createElement('div'); tag.className='pgnum'; tag.textContent='P'+n;
+    wrap.appendChild(cv); wrap.appendChild(tag); pane.appendChild(wrap);
+    pageEls.push(wrap);
+    await page.render({canvasContext:cv.getContext('2d'), viewport:vp,
+                       transform:dpr!==1?[dpr,0,0,dpr,0,0]:null}).promise;
+    pageind.textContent=`第 ${n}/${pdfDoc.numPages} 页`;
+  }
+  pageind.textContent=`共 ${pdfDoc.numPages} 页 · 点右侧 📄P# 跳转`;
+  trackPage();
+}
+// 滚动时更新"当前页"
+function trackPage(){
+  pane.addEventListener('scroll', ()=>{
+    const mid=pane.scrollTop+pane.clientHeight*0.35;
+    let cur=1;
+    for(let i=0;i<pageEls.length;i++){ if(pageEls[i].offsetTop<=mid) cur=i+1; }
+    pageind.textContent=`第 ${cur}/${pdfDoc.numPages} 页`;
+  });
+}
+renderAll().catch(err=>{
+  const l=document.getElementById('load');
+  if(l) l.innerHTML='<div style="color:#b00;font-size:13px;padding:20px;text-align:center">PDF 渲染失败：'+err.message+'<br><br>请用 Chrome 打开本文件夹下的 index.html。</div>';
+  console.error(err);
+});
+
+/* ============ 可拖动分隔条 ============ */
+const rz=document.getElementById('resizer');
+let drag=false;
+rz.addEventListener('mousedown',()=>{drag=true;document.body.style.userSelect='none';});
+window.addEventListener('mouseup',()=>{
+  if(drag){drag=false;document.body.style.userSelect='';
+    clearTimeout(window._rt); window._rt=setTimeout(renderAll,150);} // 重渲染保清晰
+});
+window.addEventListener('mousemove',e=>{
+  if(!drag) return;
+  const pct=Math.min(75,Math.max(30, e.clientX/window.innerWidth*100));
+  document.getElementById('pdf-pane').style.width=pct+'%';
+});
+
+/* ============ 讲解区字号缩放（A− / A+，本地记忆） ============ */
+(function(){
+  const gp=document.getElementById('guide-body');
+  let z=parseFloat(localStorage.getItem('paperGZ')||'1');
+  const apply=()=>{gp.style.zoom=z; localStorage.setItem('paperGZ',z);};
+  apply();
+  document.getElementById('fzminus').onclick=()=>{z=Math.max(0.8,Math.round((z-0.1)*10)/10);apply();};
+  document.getElementById('fzplus').onclick=()=>{z=Math.min(1.7,Math.round((z+0.1)*10)/10);apply();};
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>速读 · __论文标题__</title>
+<style>
+  :root{
+    --bg:#eceef1; --panel:#fff; --ink:#1c2127; --sub:#5b6470;
+    --line:#e2e6eb; --accent:#2b6cb0; --accent-soft:#eaf2fb;
+    --fig:#fff8ec; --fig-line:#f0dcb8; --hl:#fff3cd;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       color:var(--ink);background:var(--bg);overflow:hidden;line-height:1.55}
+  /* ---- 右栏头部（原顶部 header 移入右侧栏开头） ---- */
+  #guide-head{padding:14px 16px 0}
+  #guide-head h1{font-size:18px;font-weight:700;line-height:1.4}
+  #guide-head .en{font-size:13px;color:var(--sub);font-weight:400;margin-top:2px}
+  #guide-head .meta{font-size:12px;color:var(--sub);margin-top:4px}
+  #guide-head .meta a{color:var(--accent);text-decoration:none}
+  .nav{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center;
+       position:sticky;top:0;z-index:5;background:#f6f7f9;padding:8px 16px 9px;
+       border-bottom:1px solid var(--line);box-shadow:0 2px 5px rgba(0,0,0,.04)}
+  .chip{font-size:13px;padding:3px 11px;border:1px solid var(--line);border-radius:14px;
+        background:#fafbfc;color:var(--sub);cursor:pointer;user-select:none}
+  .chip:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .pageind{margin-left:auto;font-size:13px;color:var(--sub)}
+  /* ---- main split ---- */
+  main{display:flex;height:100vh}
+  #pdf-pane{width:55%;overflow-y:auto;background:var(--bg);padding:14px 0;text-align:center}
+  #pdf-pane .pg{margin:0 auto 14px;box-shadow:0 1px 6px rgba(0,0,0,.16);background:#fff;
+                position:relative;display:inline-block;width:96%}
+  #pdf-pane canvas{display:block;width:100%;height:auto;border-radius:2px}
+  #pdf-pane .pgnum{position:absolute;top:6px;left:6px;font-size:10px;color:#fff;
+                   background:rgba(0,0,0,.45);padding:1px 6px;border-radius:8px}
+  #resizer{width:6px;cursor:col-resize;background:linear-gradient(var(--line),var(--line));
+           flex:0 0 6px}
+  #resizer:hover{background:var(--accent)}
+  #guide-pane{flex:1;overflow-y:auto;background:#f6f7f9}
+  #guide-body{padding:6px 16px 80px}
+  /* ---- guide cards ---- */
+  .sec-h{font-size:16px;font-weight:700;color:var(--accent);margin:22px 0 10px;
+         padding-bottom:5px;border-bottom:2px solid var(--accent-soft);display:flex;align-items:center;gap:7px}
+  .sec-h:first-child{margin-top:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+        padding:11px 13px;margin-bottom:11px;position:relative}
+  .card.fig{background:var(--fig);border-color:var(--fig-line)}
+  .card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px}
+  .card .t{font-size:15.5px;font-weight:600;color:var(--ink)}
+  .card.fig .t::before{content:"📊 ";}
+  .badge{flex:0 0 auto;font-size:12px;font-weight:600;color:#fff;background:var(--accent);
+         padding:2px 8px;border-radius:10px;cursor:pointer;white-space:nowrap;text-decoration:none}
+  .badge:hover{background:#1f4e7a}
+  .card p{font-size:15px;color:#2b3138;margin:3px 0}
+  .card ul{margin:5px 0 0;padding-left:2px;list-style:none}
+  .card li{font-size:15px;color:#2b3138;margin:6px 0;padding-left:16px;position:relative}
+  .card li::before{content:"";position:absolute;left:3px;top:10px;width:5px;height:5px;
+                   border-radius:50%;background:var(--accent)}
+  .card li .k{font-weight:600;color:var(--accent);margin-right:4px}
+  .lead{font-size:15.5px;color:#2b3138;line-height:1.65}
+  .lead b{color:var(--accent)}
+  /* 词汇卡 */
+  .card.terms{background:#f1f8f3;border-color:#cfe6d3}
+  .card li.term{padding-left:0;margin:11px 0}
+  .card li.term::before{display:none}
+  .tn{display:block;font-weight:700;color:#217a4b;font-size:1.03em;margin-bottom:2px}
+  .flash{animation:fl 1.4s ease}
+  @keyframes fl{0%,40%{background:var(--hl)}100%{}}
+  /* loading */
+  #load{position:absolute;left:0;right:55%;top:0;bottom:0;display:flex;align-items:center;
+        justify-content:center;flex-direction:column;gap:10px;color:var(--sub);font-size:13px;background:var(--bg)}
+  .spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--accent);
+        border-radius:50%;animation:sp 0.8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<main>
+  <div id="pdf-pane"><div id="load"><div class="spin"></div><div>正在渲染 PDF…</div></div></div>
+  <div id="resizer"></div>
+  <div id="guide-pane">
+    <div id="guide-head">
+      <h1>Waddington-OT：用「最优传输」从时间序列单细胞数据重建细胞命运轨迹（重编程奠基作）</h1>
+      <div class="en">Optimal-Transport Analysis of Single-Cell Gene Expression Identifies Developmental Trajectories in Reprogramming</div>
+      <div class="meta">Schiebinger, Shu, Tabaka … Jaenisch, Regev, Lander（Broad Institute / MIT / Harvard）· Cell 176, 928–943 · 2019-02-07 · <a href="https://doi.org/10.1016/j.cell.2019.01.006" target="_blank">doi:10.1016/j.cell.2019.01.006</a></div>
+    </div>
+    <div class="nav" id="nav"><span class="pageind" id="pageind">PDF 加载中…</span><span class="chip" id="fzminus" title="缩小讲解字号">A−</span><span class="chip" id="fzplus" title="放大讲解字号">A+</span></div>
+    <div id="guide-body"></div>
+  </div>
+</main>
+
+<script src="./vendor/pdf.min.js"></script>
+<script src="./assets/paper-data.js"></script>
+<script src="./vendor/pdf.worker.inline.js"></script>
+<script>
+/* ============ 中文速读讲解（精读后人工撰写） ============ */
+const SECTIONS = [
+ // ===== 在此填入本论文的中文速读讲解（Claude 精读后撰写） =====
+ // 每个 section = {name:"区名", items:[...]}；item.kind ∈ 'terms' | 'lead' | 'card' | 'fig'
+ //  terms 开篇核心词汇卡（绿底）: {kind:"terms", page, t:"分组名", points:[[术语名（中英）, 大白话解释], ...]}
+ //  lead  一句话核心            : {kind:"lead",  page, html:`可含 <b>加粗</b> 的 HTML`}
+ //  card  普通段落讲解          : {kind:"card",  page, t:"标题", points:[[小标签, 说明], ...]}
+ //  fig   图表讲解（黄底📊）     : {kind:"fig",   page, t:"图N", points:[[panel如"A 分图", 讲解], ...]}
+ //  page = 该内容对应的 PDF 物理页码（点右上角 📄P# 跳到左侧该页）
+ //  ⚠️ 内容里的引号一律用中文「」或弯引号 “” —— 禁用英文直双引号，否则会截断 JS 字符串
+ {name:"🔑 核心词汇（读前必看）", items:[
+   {kind:"terms", page:1, t:"要解决的根本难题", points:[
+     ["核心矛盾","scRNA-seq 在测一个细胞时会把它「杀死」，所以你永远没法追踪同一个细胞和它后代随时间的变化。你只有一系列离散的「快照」。难题：怎么把这些快照连成一部「电影」（连续的发育轨迹）？"],
+     ["祖先-后代命运（ancestor-descendant fate）","本文的目标：给定某时刻一个细胞的表达谱，它的后代在更晚时刻最可能长成什么样？它的祖先在更早时刻最可能是什么样？"],
+     ["重编程（reprogramming）","本文的应用场景：把小鼠胚胎成纤维细胞(MEF)通过转入 4 个转录因子(OKSM=Oct4/Klf4/Sox2/Myc)逆转成诱导多能干细胞(iPSC)。18 天、每 12 小时取样、共 31.5 万细胞。"]]},
+   {kind:"terms", page:1, t:"核心方法", points:[
+     ["最优传输 OT（optimal transport）","本文的数学核心。OT 最初是「怎样用最小搬运代价把一堆土从 A 处搬成 B 处的形状」。本文把它用到细胞上：把「t1 时刻的细胞分布」最省力地搬成「t2 时刻的细胞分布」，从而推断哪些祖先细胞对应哪些后代细胞。关键假设：短时间内细胞只移动一小段距离（马尔可夫过程）。"],
+     ["把细胞看成概率分布","不把细胞轨迹画成一条线(图论的边)，而是认为每个时刻的细胞都是从基因表达空间的一个概率分布里抽样出来的；每个细胞都有「一个可能起源的分布」和「一个可能命运的分布」。这样能刻画命运的「渐变分叉」，而非硬邦邦的分叉点。"],
+     ["非平衡传输（unbalanced transport）","经典 OT 假设「质量守恒」(土不会变多)，但细胞会增殖和死亡。本文改造 OT 加入增殖/凋亡率（用细胞周期和凋亡信号估计），让「质量」可增可减。"],
+     ["时间耦合（temporal coupling）","相邻时间点之间「哪个祖先→哪个后代」的联合分布。OT 算出相邻耦合后，把它们串起来就得到跨长时间的轨迹。"]]},
+   {kind:"terms", page:2, t:"几个结果术语", points:[
+     ["MET（间充质-上皮转化）","重编程中后期(第8天后)细胞经历的关键转变。MET 态进一步分化出 多能(iPSC)、胚外(滋养层)、神经 等命运。另一条路是终末的「基质(stromal)」态。"],
+     ["FLE（力导向布局嵌入）","本文用的 2D 可视化方法（类似 UMAP），把 25 万细胞铺在平面上看轨迹。"],
+     ["旁分泌信号（paracrine）","一个细胞分泌信号影响邻近另一类细胞。本文发现基质细胞分泌的信号(如 GDF9)能影响 iPSC 谱系。"]]},
+ ]},
+
+ {name:"📌 一句话核心", items:[
+   {kind:"lead", page:1, html:`这是<b>把「最优传输(OT)」引入单细胞轨迹分析的奠基性论文</b>（Regev & Lander 团队，Cell 2019），方法叫 <b>Waddington-OT</b>。核心思想：把每个时刻的细胞看成基因表达空间里的一个<b>概率分布</b>，用 OT 推断相邻时间点之间「祖先→后代」的<b>命运耦合</b>，从而把离散快照连成连续的发育「电影」。它改造经典 OT 以容纳细胞增殖/死亡。应用于 <b>iPSC 重编程（18 天 / 31.5 万细胞）</b>，揭示出比以往认知更丰富的命运图谱：细胞先分化为「基质态」或「MET 态」，MET 态再生出多能/胚外/神经等命运。进一步推断驱动各命运的转录因子和旁分泌信号，并<b>实验验证了转录因子 Obox6 和细胞因子 GDF9 能提高重编程效率</b>。这是本批文献里「时间动态建模」的方法论根基。`},
+ ]},
+
+ {name:"① Fig 1：OT 建模思想", items:[
+   {kind:"fig", page:3, t:"Figure 1 · 用最优传输建模发育过程", points:[
+     ["A 核心","随时间变化的分布 Pt 在各时间点采样得到经验分布；短时间内真实耦合接近 OT 耦合，可从经验分布近似算出。"],
+     ["C-D 祖先/后代","给定一组细胞，沿时间耦合「前进」得到后代分布、「倒带」得到祖先分布。"],
+     ["E 共同祖先","两组细胞的祖先分布若收敛，说明它们有共同祖先。"],
+     ["F 调控模型","沿祖先轨迹分析趋势，用早期转录因子表达预测晚期基因signature——构建基因调控模型。"]]},
+ ]},
+
+ {name:"② Fig 2：重编程时间序列", items:[
+   {kind:"fig", page:5, t:"Figure 2 · iPSC 重编程的单细胞时间序列", points:[
+     ["A 实验","二次重编程系统：MEF 加 Dox 诱导 OKSM(第0天)，第8天撤 Dox 转入 2i 或 serum 培养；第10天 Oct4-EGFP+ 标志重编程成功。每 12h 取样，共 39 个时间点 25 万细胞。"],
+     ["B-G 景观","FLE 可视化：细胞按多能/上皮/滋养层/神经/基质 signature 分类；2i 和 serum 条件下各命运比例不同。"],
+     ["H-I 轨迹","基质细胞的祖先早在第 1.5 天就开始分化出去；而多能/上皮/滋养层/神经的祖先直到第 8 天 MET 之后才能区分。"],
+     ["J 验证","用 t1、t3 插值预测 t2 分布，与真实观测几乎一样好（接近批次间基线）——证明模型可预测、且对参数扰动稳健。"]]},
+ ]},
+
+ {name:"③ Fig 3-5：命运轨迹与调控", items:[
+   {kind:"fig", page:7, t:"Figure 3 · 早期走向基质或 MET", points:[
+     ["两条路","所有细胞先快速增殖、丢失 MEF 身份；随后分化成 基质态(stromal) 或 MET 态。基质区有 ECM 重排、衰老、SASP 分泌表型；MET 区增殖增强、丢失成纤维身份。"],
+     ["调控趋势","沿祖先轨迹找出预测性转录因子：基质祖先有 Id3/Nfix/Prrx1；MET 祖先有 Dmrtc2/Pou3f1 等。"]]},
+   {kind:"card", page:9, t:"调控分析（两种方法）", points:[
+     ["局部","找在「后代多 vs 后代少」的细胞中富集的转录因子。"],
+     ["全局","建转录因子模块→靶基因模块的全局调控模型，用早期 TF 表达预测晚期基因 signature。"],
+     ["产出","一系列预测特定命运的转录因子，可作为提高重编程效率的候选。"]]},
+ ]},
+
+ {name:"④ Fig 6-7：旁分泌 + 实验验证", items:[
+   {kind:"card", page:16, t:"旁分泌信号预测（Fig 6）", points:[
+     ["方法","基于配体-受体对在不同细胞集间的共表达定义「互作分数」。"],
+     ["发现","基质细胞的多个 SASP 配体与 iPSC 上的受体高互作，如 GDF9↔Tdgf1、Cxcl12↔Dpp4。"]]},
+   {kind:"fig", page:16, t:"Figure 7 · 实验验证（全文的硬证据）", points:[
+     ["Obox6","把模型预测的转录因子 Obox6 与 OKSM 一起表达，重编程效率在 2i 和 serum 中提高约 2 倍（原代 MEF 也一致）。"],
+     ["GDF9","加入重组 GDF9（互作分数最高的 iPSC 谱系配体，作用于 Tdgf1）能增强重编程——而且关键是在第 8 天后加才有效（以往在第 0-2 天加失败），正好对应模型预测 Gdf9/Tdgf1 从第 8 天起表达、第 14 天互作最强。"],
+     ["意义","这两个实验把「计算预测」落到了「湿实验验证」，是 Waddington-OT 说服力的来源。"]]},
+ ]},
+
+ {name:"⑤ 定位与意义", items:[
+   {kind:"lead", page:1, html:`定位：Waddington-OT 是<b>「用最优传输做单细胞时间动态」的开山之作</b>，被本批多篇论文继承——第 2 篇综述、第 3 篇综述都把 OT(scEGOT/TrajectoryNet/TIGON/moscot) 列为跨时间细胞状态匹配的核心工具，第 6 篇 Spateo 的 3D 对齐与形态矢量场也是 OT 思想的空间版。它对应第 1 篇 CZI 纲领文里的<b>「细胞动态 / manipulator(操纵器)」</b>能力——预测细胞在状态间的转移。与第 6/8 篇的区别：Waddington-OT 建模的是<b>基因表达空间</b>里的命运转移（时间维度），Spateo/stVCR 建模的是<b>物理空间</b>里的位置与迁移。两者结合就是「时空」。这篇虽是 2019 年的「老」论文，却是理解后面所有动态/轨迹方法的根。`},
+ ]},
+];
+
+/* ============ 渲染右侧讲解 ============ */
+const guide = document.getElementById('guide-body');
+const nav = document.getElementById('nav');
+SECTIONS.forEach((sec, si)=>{
+  const h = document.createElement('div');
+  h.className='sec-h'; h.id='sec-'+si; h.textContent=sec.name;
+  guide.appendChild(h);
+  // nav chip
+  const chip=document.createElement('span');
+  chip.className='chip'; chip.textContent=sec.name.replace(/^[^ ]+ /,'').slice(0,8);
+  chip.onclick=()=>h.scrollIntoView({behavior:'smooth',block:'start'});
+  nav.insertBefore(chip, nav.firstChild);
+  sec.items.forEach(it=>{
+    const c=document.createElement('div');
+    c.className='card'+(it.kind==='fig'?' fig':'')+(it.kind==='terms'?' terms':'');
+    if(it.kind==='lead'){ c.className='card'; c.innerHTML=`<div class="top"><div class="t">核心一句话</div><a class="badge" data-pg="${it.page}">📄 P${it.page}</a></div><div class="lead">${it.html}</div>`; }
+    else{
+      let inner=`<div class="top"><div class="t">${it.t}</div><a class="badge" data-pg="${it.page}">📄 P${it.page}</a></div>`;
+      inner+='<ul>'+it.points.map(p=> it.kind==='terms'
+        ? `<li class="term"><span class="tn">${p[0]}</span>${p[1]}</li>`
+        : `<li><span class="k">${p[0]}</span>${p[1]}</li>`).join('')+'</ul>';
+      c.innerHTML=inner;
+    }
+    guide.appendChild(c);
+  });
+});
+// 页码徽章 → 跳转左侧 PDF
+guide.addEventListener('click', e=>{
+  const b=e.target.closest('.badge'); if(!b) return;
+  const n=b.dataset.pg; const el=document.getElementById('pg-'+n);
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+});
+
+/* ============ 渲染 PDF（PDF.js，本地、离线） ============ */
+const pane=document.getElementById('pdf-pane');
+const pageind=document.getElementById('pageind');
+let pdfDoc=null, pageEls=[];
+
+function b64ToBytes(b64){
+  const bin=atob(b64); const len=bin.length; const bytes=new Uint8Array(len);
+  for(let i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes;
+}
+
+async function renderAll(){
+  // file:// 下用 blob URL 创建同源 worker（绕开本地 worker 安全限制）
+  const wblob=new Blob([window.PDF_WORKER_CODE],{type:'application/javascript'});
+  pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(wblob);
+  const bytes=b64ToBytes(window.PDF_B64);
+  pdfDoc=await pdfjsLib.getDocument({data:bytes}).promise;
+  document.getElementById('load')?.remove();
+  pane.innerHTML='';
+  pageEls=[];
+  const dpr=Math.min(window.devicePixelRatio||1, 2.5);
+  const paneW=pane.clientWidth*0.96-2;
+  for(let n=1;n<=pdfDoc.numPages;n++){
+    const page=await pdfDoc.getPage(n);
+    const base=page.getViewport({scale:1});
+    const scale=paneW/base.width;
+    const vp=page.getViewport({scale});
+    const wrap=document.createElement('div'); wrap.className='pg'; wrap.id='pg-'+n;
+    const cv=document.createElement('canvas');
+    cv.width=Math.floor(vp.width*dpr); cv.height=Math.floor(vp.height*dpr);
+    const tag=document.createElement('div'); tag.className='pgnum'; tag.textContent='P'+n;
+    wrap.appendChild(cv); wrap.appendChild(tag); pane.appendChild(wrap);
+    pageEls.push(wrap);
+    await page.render({canvasContext:cv.getContext('2d'), viewport:vp,
+                       transform:dpr!==1?[dpr,0,0,dpr,0,0]:null}).promise;
+    pageind.textContent=`第 ${n}/${pdfDoc.numPages} 页`;
+  }
+  pageind.textContent=`共 ${pdfDoc.numPages} 页 · 点右侧 📄P# 跳转`;
+  trackPage();
+}
+// 滚动时更新"当前页"
+function trackPage(){
+  pane.addEventListener('scroll', ()=>{
+    const mid=pane.scrollTop+pane.clientHeight*0.35;
+    let cur=1;
+    for(let i=0;i<pageEls.length;i++){ if(pageEls[i].offsetTop<=mid) cur=i+1; }
+    pageind.textContent=`第 ${cur}/${pdfDoc.numPages} 页`;
+  });
+}
+renderAll().catch(err=>{
+  const l=document.getElementById('load');
+  if(l) l.innerHTML='<div style="color:#b00;font-size:13px;padding:20px;text-align:center">PDF 渲染失败：'+err.message+'<br><br>请用 Chrome 打开本文件夹下的 index.html。</div>';
+  console.error(err);
+});
+
+/* ============ 可拖动分隔条 ============ */
+const rz=document.getElementById('resizer');
+let drag=false;
+rz.addEventListener('mousedown',()=>{drag=true;document.body.style.userSelect='none';});
+window.addEventListener('mouseup',()=>{
+  if(drag){drag=false;document.body.style.userSelect='';
+    clearTimeout(window._rt); window._rt=setTimeout(renderAll,150);} // 重渲染保清晰
+});
+window.addEventListener('mousemove',e=>{
+  if(!drag) return;
+  const pct=Math.min(75,Math.max(30, e.clientX/window.innerWidth*100));
+  document.getElementById('pdf-pane').style.width=pct+'%';
+});
+
+/* ============ 讲解区字号缩放（A− / A+，本地记忆） ============ */
+(function(){
+  const gp=document.getElementById('guide-body');
+  let z=parseFloat(localStorage.getItem('paperGZ')||'1');
+  const apply=()=>{gp.style.zoom=z; localStorage.setItem('paperGZ',z);};
+  apply();
+  document.getElementById('fzminus').onclick=()=>{z=Math.max(0.8,Math.round((z-0.1)*10)/10);apply();};
+  document.getElementById('fzplus').onclick=()=>{z=Math.min(1.7,Math.round((z+0.1)*10)/10);apply();};
+})();
+</script>
+</body>
+</html>

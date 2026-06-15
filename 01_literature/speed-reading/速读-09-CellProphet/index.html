@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>速读 · __论文标题__</title>
+<style>
+  :root{
+    --bg:#eceef1; --panel:#fff; --ink:#1c2127; --sub:#5b6470;
+    --line:#e2e6eb; --accent:#2b6cb0; --accent-soft:#eaf2fb;
+    --fig:#fff8ec; --fig-line:#f0dcb8; --hl:#fff3cd;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       color:var(--ink);background:var(--bg);overflow:hidden;line-height:1.55}
+  /* ---- 右栏头部（原顶部 header 移入右侧栏开头） ---- */
+  #guide-head{padding:14px 16px 0}
+  #guide-head h1{font-size:18px;font-weight:700;line-height:1.4}
+  #guide-head .en{font-size:13px;color:var(--sub);font-weight:400;margin-top:2px}
+  #guide-head .meta{font-size:12px;color:var(--sub);margin-top:4px}
+  #guide-head .meta a{color:var(--accent);text-decoration:none}
+  .nav{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center;
+       position:sticky;top:0;z-index:5;background:#f6f7f9;padding:8px 16px 9px;
+       border-bottom:1px solid var(--line);box-shadow:0 2px 5px rgba(0,0,0,.04)}
+  .chip{font-size:13px;padding:3px 11px;border:1px solid var(--line);border-radius:14px;
+        background:#fafbfc;color:var(--sub);cursor:pointer;user-select:none}
+  .chip:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .pageind{margin-left:auto;font-size:13px;color:var(--sub)}
+  /* ---- main split ---- */
+  main{display:flex;height:100vh}
+  #pdf-pane{width:55%;overflow-y:auto;background:var(--bg);padding:14px 0;text-align:center}
+  #pdf-pane .pg{margin:0 auto 14px;box-shadow:0 1px 6px rgba(0,0,0,.16);background:#fff;
+                position:relative;display:inline-block;width:96%}
+  #pdf-pane canvas{display:block;width:100%;height:auto;border-radius:2px}
+  #pdf-pane .pgnum{position:absolute;top:6px;left:6px;font-size:10px;color:#fff;
+                   background:rgba(0,0,0,.45);padding:1px 6px;border-radius:8px}
+  #resizer{width:6px;cursor:col-resize;background:linear-gradient(var(--line),var(--line));
+           flex:0 0 6px}
+  #resizer:hover{background:var(--accent)}
+  #guide-pane{flex:1;overflow-y:auto;background:#f6f7f9}
+  #guide-body{padding:6px 16px 80px}
+  /* ---- guide cards ---- */
+  .sec-h{font-size:16px;font-weight:700;color:var(--accent);margin:22px 0 10px;
+         padding-bottom:5px;border-bottom:2px solid var(--accent-soft);display:flex;align-items:center;gap:7px}
+  .sec-h:first-child{margin-top:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+        padding:11px 13px;margin-bottom:11px;position:relative}
+  .card.fig{background:var(--fig);border-color:var(--fig-line)}
+  .card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px}
+  .card .t{font-size:15.5px;font-weight:600;color:var(--ink)}
+  .card.fig .t::before{content:"📊 ";}
+  .badge{flex:0 0 auto;font-size:12px;font-weight:600;color:#fff;background:var(--accent);
+         padding:2px 8px;border-radius:10px;cursor:pointer;white-space:nowrap;text-decoration:none}
+  .badge:hover{background:#1f4e7a}
+  .card p{font-size:15px;color:#2b3138;margin:3px 0}
+  .card ul{margin:5px 0 0;padding-left:2px;list-style:none}
+  .card li{font-size:15px;color:#2b3138;margin:6px 0;padding-left:16px;position:relative}
+  .card li::before{content:"";position:absolute;left:3px;top:10px;width:5px;height:5px;
+                   border-radius:50%;background:var(--accent)}
+  .card li .k{font-weight:600;color:var(--accent);margin-right:4px}
+  .lead{font-size:15.5px;color:#2b3138;line-height:1.65}
+  .lead b{color:var(--accent)}
+  /* 词汇卡 */
+  .card.terms{background:#f1f8f3;border-color:#cfe6d3}
+  .card li.term{padding-left:0;margin:11px 0}
+  .card li.term::before{display:none}
+  .tn{display:block;font-weight:700;color:#217a4b;font-size:1.03em;margin-bottom:2px}
+  .flash{animation:fl 1.4s ease}
+  @keyframes fl{0%,40%{background:var(--hl)}100%{}}
+  /* loading */
+  #load{position:absolute;left:0;right:55%;top:0;bottom:0;display:flex;align-items:center;
+        justify-content:center;flex-direction:column;gap:10px;color:var(--sub);font-size:13px;background:var(--bg)}
+  .spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--accent);
+        border-radius:50%;animation:sp 0.8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<main>
+  <div id="pdf-pane"><div id="load"><div class="spin"></div><div>正在渲染 PDF…</div></div></div>
+  <div id="resizer"></div>
+  <div id="guide-pane">
+    <div id="guide-head">
+      <h1>TRIGON（CellProphet）：用 transformer 把「基因调控网络」当时间因果问题来推断（动态 GRN）</h1>
+      <div class="en">Dissecting dynamic gene regulatory network using transformer-based temporal causality analysis</div>
+      <div class="meta">Peng, Qi, Lu … J. Wang（北京大学未来技术学院 大数据与生物医学 AI 系）· bioRxiv 2025.02.05.636766 · 2025-02-08 · <a href="https://doi.org/10.1101/2025.02.05.636766" target="_blank">doi:10.1101/2025.02.05.636766</a></div>
+    </div>
+    <div class="nav" id="nav"><span class="pageind" id="pageind">PDF 加载中…</span><span class="chip" id="fzminus" title="缩小讲解字号">A−</span><span class="chip" id="fzplus" title="放大讲解字号">A+</span></div>
+    <div id="guide-body"></div>
+  </div>
+</main>
+
+<script src="./vendor/pdf.min.js"></script>
+<script src="./assets/paper-data.js"></script>
+<script src="./vendor/pdf.worker.inline.js"></script>
+<script>
+/* ============ 中文速读讲解（精读后人工撰写） ============ */
+const SECTIONS = [
+ // ===== 在此填入本论文的中文速读讲解（Claude 精读后撰写） =====
+ // 每个 section = {name:"区名", items:[...]}；item.kind ∈ 'terms' | 'lead' | 'card' | 'fig'
+ //  terms 开篇核心词汇卡（绿底）: {kind:"terms", page, t:"分组名", points:[[术语名（中英）, 大白话解释], ...]}
+ //  lead  一句话核心            : {kind:"lead",  page, html:`可含 <b>加粗</b> 的 HTML`}
+ //  card  普通段落讲解          : {kind:"card",  page, t:"标题", points:[[小标签, 说明], ...]}
+ //  fig   图表讲解（黄底📊）     : {kind:"fig",   page, t:"图N", points:[[panel如"A 分图", 讲解], ...]}
+ //  page = 该内容对应的 PDF 物理页码（点右上角 📄P# 跳到左侧该页）
+ //  ⚠️ 内容里的引号一律用中文「」或弯引号 “” —— 禁用英文直双引号，否则会截断 JS 字符串
+ {name:"🔑 核心词汇（读前必看）", items:[
+   {kind:"terms", page:1, t:"先搞清楚名字", points:[
+     ["TRIGON / CellProphet","注意：这篇文件名叫 CellProphet，但论文里模型正式名是 <b>TRIGON</b>（Transformer-based method for inference of dynamic gene regulatory network）。本速读统一按论文用 TRIGON。"],
+     ["基因调控网络 GRN（gene regulatory network）","转录因子(TF)结合 DNA 调控元件、促进或抑制靶基因(TG)表达，形成的网络。它决定了哪些基因在对的时间/地点开关，从而决定细胞命运。本文要做的就是从数据反推出这个网络。"],
+     ["动态 GRN（dynamic GRN）","本文的关键追求：TF→TG 的调控强度随细胞分化随时间变化，而不是固定不变。多数旧方法只推「静态 GRN」（假设强度恒定），TRIGON 要推「动态」的。"]]},
+   {kind:"terms", page:1, t:"核心思想", points:[
+     ["Granger 因果（Granger causality）","一个统计概念：如果时间序列 X 的变化总是「先于」并能预测 Y 的变化，就说 X Granger-导致 Y。本文的洞见：这正好对应基因调控——TG 在 t 时刻之后的表达，受它的 TF 在更早时刻表达的影响。于是把「推断 GRN」反过来变成「学 TF 与 TG 表达之间的时间因果」。"],
+     ["反问题（inverse problem）","正问题是「已知 GRN，预测基因表达」；本文做反问题——「让模型学会用 TF 早期表达预测 TG 晚期表达，再从模型里把学到的调控网络抠出来」。"],
+     ["watching / forecasting window（观察窗 / 预测窗）","观察窗=已观测的基因表达时间窗；预测窗=要预测的时间窗。TRIGON 输入观察窗表达+一个 base GRN，输出预测窗表达+学到的 GRN 系数矩阵。"]]},
+   {kind:"terms", page:2, t:"两个独创的 mask（架构关键）", points:[
+     ["时间 mask（temporal aggregation）","上三角 mask：让某基因在某时刻只能「注意」更早时刻的信息，不能看未来。符合分化原理——细胞此刻只知道祖先的基因信息，后代还没出生。"],
+     ["调控过滤 mask（regulatory filtering）","把 base GRN 当二元 mask：每个 TG 只能注意到 base GRN 里与它有连边的潜在 TF，从而只用「可能的调控者」来预测它。"],
+     ["base GRN","来自 50+ 公开数据源的先验调控网络。注意：论文实测它 99.5% 是噪声、只有 <0.5% 是真调控——但 TRIGON 仍显著超过「从 base GRN 随机选边」，证明性能来自模型本身而非先验质量。"]]},
+ ]},
+
+ {name:"📌 一句话核心", items:[
+   {kind:"lead", page:1, html:`TRIGON（北大未来技术学院，bioRxiv 2025）是一个<b>基于 transformer 的模型，把「推断基因调控网络(GRN)」重新表述为「学 TF 与 TG 表达之间的时间因果(Granger 因果)」</b>——本质是个多变量时间序列预测问题。两个独创 mask：时间 mask(只看过去) + 调控过滤 mask(只看潜在 TF)。亮点：① 在 4 个发育数据集上 SOTA，<b>AUPRC 比最新方法 CellOracle 提升 204%</b>；② 能推<b>动态 GRN</b>（调控强度随时间变），且时间分辨率可调（窗长=1 时达单细胞分辨率）；③ 识别出差异表达分析(DEA)查不出的关键转录因子（如 Myc、Nrf1）；④ <b>in silico 扰动</b>准确重现 Gata1/Spi1 敲除导致的细胞命运改变并预测表达变化。`},
+ ]},
+
+ {name:"① Fig 1：TRIGON 架构", items:[
+   {kind:"fig", page:3, t:"Figure 1 · 从 Granger 因果到 GRN", points:[
+     ["A 旧方法的问题","聚类→把每簇当一个细胞类型→各自独立推 GRN。缺陷：把连续分化离散成「桶」，丢掉分化动态；时间分辨率只到簇级；假设同簇细胞 GRN 相同(实际有异质性)。"],
+     ["B 核心类比","Granger 因果(X 先于 Y 变化)↔ 基因调控(TF 早期表达影响 TG 晚期表达)。"],
+     ["C-D 架构","观察窗表达 + base GRN 输入。① 时间聚合模块(上三角 mask，每个基因聚合自己历史表达)；② 调控过滤模块(base GRN 当 mask，每个 TG 只用潜在 TF)；用 transformer 自注意力 + MSE 损失预测预测窗表达；训练后从调控过滤模块抠出 GRN 系数矩阵。"]]},
+ ]},
+
+ {name:"② Fig 2：基准（SOTA）", items:[
+   {kind:"fig", page:6, t:"Figure 2 · 大规模基准", points:[
+     ["数据","BEELINE 提供的 mESC（胚胎干细胞）和 mHSC（造血干细胞，分 E/GM/L 三谱系）数据集，用 ChIP-seq 当真值 GRN。"],
+     ["对比","GENIE3、GRNBoost2、CEFCON、NetREX、CellOracle + Random/Prior Random。"],
+     ["结果","TRIGON 在 AUROC/AUPRC 都最高。关键发现：多数旧方法只比随机猜测略好（mESC 上 GENIE3 0.545 vs Random 0.506）；TRIGON AUROC 0.693。<b>AUPRC 平均 0.752，比 CellOracle(0.247) 提升 204%</b>。数据正样本仅 1-2%（极度不平衡，AUPRC 更可靠）。"],
+     ["证明性能来源","Prior Random（从 base GRN 随机选边）并不比 Random 好，而 TRIGON 显著超过 Prior Random → 性能来自模型本身，不是 base GRN。"]]},
+ ]},
+
+ {name:"③ Fig 3-4：关键 TF + 动态 GRN", items:[
+   {kind:"fig", page:7, t:"Figure 3 · mESC 分化的关键 TF", points:[
+     ["三类 TF","早期 TF(分化开始时活性高后降，如 Nanog/Pou5f1/Sox2/Esrrb，维持多能性)、中期 TF(12-24h 短暂升高，如 Gata4，启动分化)、晚期 TF(48-72h 高，PrE 成熟)。"],
+     ["超越 DEA","DEA 只能挑出表达变化大的 4 个 TF；TRIGON 还识别出 Myc、Nrf1 等——它们表达几乎不变(DEA 标为「稳定」)，但活性评分早期高，已知促进多能性维持。说明 TRIGON 用「调控活性」而非「表达量」找 TF，更精准。"]]},
+   {kind:"fig", page:10, t:"Figure 4 · 动态 GRN + 多组学验证", points:[
+     ["动态 GRN","对每个观察窗推 GRN，再高斯平滑→动态网络。窗长=时间分辨率，窗长=1 即单细胞分辨率。"],
+     ["验证","用 Hi-C(染色质环)、组蛋白修饰、scATAC、ChIP-seq 验证 TRIGON 预测的 Nanog→4 个 TG 边：Nanog 结合区与这 4 个 TG 形成染色质环，证明这些边是真的。"],
+     ["分辨率权衡","TF 表达与调控强度的 PCC>0.7（Esrrb/Utf1>0.9）。分辨率从 1→16 时 PCC 升高，因为单细胞噪声大、细胞数增多噪声被抵消。"]]},
+ ]},
+
+ {name:"④ Fig 5：in silico 扰动", items:[
+   {kind:"fig", page:11, t:"Figure 5 · 造血干细胞虚拟敲除", points:[
+     ["方法","把 GRN 当有向图，把某 TF 表达设 0，乘 GRN 系数矩阵把扰动效应沿边传播，迭代算出每个细胞的命运改变方向(扰动向量)。借鉴 CellOracle。"],
+     ["Gata1 敲除","Gata1 在 CMP/MEP 高表达；敲除后所有 mHSC-E 细胞扰动向量与分化轨迹相反(抑制分化)，在 CMP/MEP 区最明显——与 Gata1 促红系发育的已知功能一致。"],
+     ["Spi1 敲除","Spi1 在 LMPP/GMP 高表达；敲除后 LMPP/GMP 扰动向量指向 MEP、抑制其分化，CMP 则被促进分化为 MEP——与已知功能吻合。"],
+     ["预测表达","还能预测 Gata1 敲除后的基因表达变化(Fig 5G)。"]]},
+ ]},
+
+ {name:"⑤ 定位与意义", items:[
+   {kind:"lead", page:12, html:`定位：TRIGON 聚焦的是<b>「基因调控网络(GRN)推断 + 虚拟扰动」</b>——对应第 1 篇 CZI 纲领文里<b>「机制推断 / 预测扰动响应」</b>这一能力，也是第 2/3 篇综述反复提到的「可解释性 + 扰动预测」方向的具体落地。它和本批的「时间动态」一脉相承（第 7 篇 Waddington-OT、第 8 篇 stVCR 也建模时间），但 TRIGON 的独特角度是<b>用 Granger 因果把 GRN 推断变成时间序列预测</b>，且能做<b>可调时间分辨率的动态网络 + 虚拟基因敲除</b>。局限：只能针对单一谱系训练、缺泛化；未整合细胞间通讯/染色质可及性——作者展望做 GRN 基础模型。`},
+ ]},
+];
+
+/* ============ 渲染右侧讲解 ============ */
+const guide = document.getElementById('guide-body');
+const nav = document.getElementById('nav');
+SECTIONS.forEach((sec, si)=>{
+  const h = document.createElement('div');
+  h.className='sec-h'; h.id='sec-'+si; h.textContent=sec.name;
+  guide.appendChild(h);
+  // nav chip
+  const chip=document.createElement('span');
+  chip.className='chip'; chip.textContent=sec.name.replace(/^[^ ]+ /,'').slice(0,8);
+  chip.onclick=()=>h.scrollIntoView({behavior:'smooth',block:'start'});
+  nav.insertBefore(chip, nav.firstChild);
+  sec.items.forEach(it=>{
+    const c=document.createElement('div');
+    c.className='card'+(it.kind==='fig'?' fig':'')+(it.kind==='terms'?' terms':'');
+    if(it.kind==='lead'){ c.className='card'; c.innerHTML=`<div class="top"><div class="t">核心一句话</div><a class="badge" data-pg="${it.page}">📄 P${it.page}</a></div><div class="lead">${it.html}</div>`; }
+    else{
+      let inner=`<div class="top"><div class="t">${it.t}</div><a class="badge" data-pg="${it.page}">📄 P${it.page}</a></div>`;
+      inner+='<ul>'+it.points.map(p=> it.kind==='terms'
+        ? `<li class="term"><span class="tn">${p[0]}</span>${p[1]}</li>`
+        : `<li><span class="k">${p[0]}</span>${p[1]}</li>`).join('')+'</ul>';
+      c.innerHTML=inner;
+    }
+    guide.appendChild(c);
+  });
+});
+// 页码徽章 → 跳转左侧 PDF
+guide.addEventListener('click', e=>{
+  const b=e.target.closest('.badge'); if(!b) return;
+  const n=b.dataset.pg; const el=document.getElementById('pg-'+n);
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+});
+
+/* ============ 渲染 PDF（PDF.js，本地、离线） ============ */
+const pane=document.getElementById('pdf-pane');
+const pageind=document.getElementById('pageind');
+let pdfDoc=null, pageEls=[];
+
+function b64ToBytes(b64){
+  const bin=atob(b64); const len=bin.length; const bytes=new Uint8Array(len);
+  for(let i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes;
+}
+
+async function renderAll(){
+  // file:// 下用 blob URL 创建同源 worker（绕开本地 worker 安全限制）
+  const wblob=new Blob([window.PDF_WORKER_CODE],{type:'application/javascript'});
+  pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(wblob);
+  const bytes=b64ToBytes(window.PDF_B64);
+  pdfDoc=await pdfjsLib.getDocument({data:bytes}).promise;
+  document.getElementById('load')?.remove();
+  pane.innerHTML='';
+  pageEls=[];
+  const dpr=Math.min(window.devicePixelRatio||1, 2.5);
+  const paneW=pane.clientWidth*0.96-2;
+  for(let n=1;n<=pdfDoc.numPages;n++){
+    const page=await pdfDoc.getPage(n);
+    const base=page.getViewport({scale:1});
+    const scale=paneW/base.width;
+    const vp=page.getViewport({scale});
+    const wrap=document.createElement('div'); wrap.className='pg'; wrap.id='pg-'+n;
+    const cv=document.createElement('canvas');
+    cv.width=Math.floor(vp.width*dpr); cv.height=Math.floor(vp.height*dpr);
+    const tag=document.createElement('div'); tag.className='pgnum'; tag.textContent='P'+n;
+    wrap.appendChild(cv); wrap.appendChild(tag); pane.appendChild(wrap);
+    pageEls.push(wrap);
+    await page.render({canvasContext:cv.getContext('2d'), viewport:vp,
+                       transform:dpr!==1?[dpr,0,0,dpr,0,0]:null}).promise;
+    pageind.textContent=`第 ${n}/${pdfDoc.numPages} 页`;
+  }
+  pageind.textContent=`共 ${pdfDoc.numPages} 页 · 点右侧 📄P# 跳转`;
+  trackPage();
+}
+// 滚动时更新"当前页"
+function trackPage(){
+  pane.addEventListener('scroll', ()=>{
+    const mid=pane.scrollTop+pane.clientHeight*0.35;
+    let cur=1;
+    for(let i=0;i<pageEls.length;i++){ if(pageEls[i].offsetTop<=mid) cur=i+1; }
+    pageind.textContent=`第 ${cur}/${pdfDoc.numPages} 页`;
+  });
+}
+renderAll().catch(err=>{
+  const l=document.getElementById('load');
+  if(l) l.innerHTML='<div style="color:#b00;font-size:13px;padding:20px;text-align:center">PDF 渲染失败：'+err.message+'<br><br>请用 Chrome 打开本文件夹下的 index.html。</div>';
+  console.error(err);
+});
+
+/* ============ 可拖动分隔条 ============ */
+const rz=document.getElementById('resizer');
+let drag=false;
+rz.addEventListener('mousedown',()=>{drag=true;document.body.style.userSelect='none';});
+window.addEventListener('mouseup',()=>{
+  if(drag){drag=false;document.body.style.userSelect='';
+    clearTimeout(window._rt); window._rt=setTimeout(renderAll,150);} // 重渲染保清晰
+});
+window.addEventListener('mousemove',e=>{
+  if(!drag) return;
+  const pct=Math.min(75,Math.max(30, e.clientX/window.innerWidth*100));
+  document.getElementById('pdf-pane').style.width=pct+'%';
+});
+
+/* ============ 讲解区字号缩放（A− / A+，本地记忆） ============ */
+(function(){
+  const gp=document.getElementById('guide-body');
+  let z=parseFloat(localStorage.getItem('paperGZ')||'1');
+  const apply=()=>{gp.style.zoom=z; localStorage.setItem('paperGZ',z);};
+  apply();
+  document.getElementById('fzminus').onclick=()=>{z=Math.max(0.8,Math.round((z-0.1)*10)/10);apply();};
+  document.getElementById('fzplus').onclick=()=>{z=Math.min(1.7,Math.round((z+0.1)*10)/10);apply();};
+})();
+</script>
+</body>
+</html>

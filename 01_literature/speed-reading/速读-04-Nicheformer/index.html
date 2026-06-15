@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>速读 · __论文标题__</title>
+<style>
+  :root{
+    --bg:#eceef1; --panel:#fff; --ink:#1c2127; --sub:#5b6470;
+    --line:#e2e6eb; --accent:#2b6cb0; --accent-soft:#eaf2fb;
+    --fig:#fff8ec; --fig-line:#f0dcb8; --hl:#fff3cd;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       color:var(--ink);background:var(--bg);overflow:hidden;line-height:1.55}
+  /* ---- 右栏头部（原顶部 header 移入右侧栏开头） ---- */
+  #guide-head{padding:14px 16px 0}
+  #guide-head h1{font-size:18px;font-weight:700;line-height:1.4}
+  #guide-head .en{font-size:13px;color:var(--sub);font-weight:400;margin-top:2px}
+  #guide-head .meta{font-size:12px;color:var(--sub);margin-top:4px}
+  #guide-head .meta a{color:var(--accent);text-decoration:none}
+  .nav{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center;
+       position:sticky;top:0;z-index:5;background:#f6f7f9;padding:8px 16px 9px;
+       border-bottom:1px solid var(--line);box-shadow:0 2px 5px rgba(0,0,0,.04)}
+  .chip{font-size:13px;padding:3px 11px;border:1px solid var(--line);border-radius:14px;
+        background:#fafbfc;color:var(--sub);cursor:pointer;user-select:none}
+  .chip:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .pageind{margin-left:auto;font-size:13px;color:var(--sub)}
+  /* ---- main split ---- */
+  main{display:flex;height:100vh}
+  #pdf-pane{width:55%;overflow-y:auto;background:var(--bg);padding:14px 0;text-align:center}
+  #pdf-pane .pg{margin:0 auto 14px;box-shadow:0 1px 6px rgba(0,0,0,.16);background:#fff;
+                position:relative;display:inline-block;width:96%}
+  #pdf-pane canvas{display:block;width:100%;height:auto;border-radius:2px}
+  #pdf-pane .pgnum{position:absolute;top:6px;left:6px;font-size:10px;color:#fff;
+                   background:rgba(0,0,0,.45);padding:1px 6px;border-radius:8px}
+  #resizer{width:6px;cursor:col-resize;background:linear-gradient(var(--line),var(--line));
+           flex:0 0 6px}
+  #resizer:hover{background:var(--accent)}
+  #guide-pane{flex:1;overflow-y:auto;background:#f6f7f9}
+  #guide-body{padding:6px 16px 80px}
+  /* ---- guide cards ---- */
+  .sec-h{font-size:16px;font-weight:700;color:var(--accent);margin:22px 0 10px;
+         padding-bottom:5px;border-bottom:2px solid var(--accent-soft);display:flex;align-items:center;gap:7px}
+  .sec-h:first-child{margin-top:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+        padding:11px 13px;margin-bottom:11px;position:relative}
+  .card.fig{background:var(--fig);border-color:var(--fig-line)}
+  .card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px}
+  .card .t{font-size:15.5px;font-weight:600;color:var(--ink)}
+  .card.fig .t::before{content:"📊 ";}
+  .badge{flex:0 0 auto;font-size:12px;font-weight:600;color:#fff;background:var(--accent);
+         padding:2px 8px;border-radius:10px;cursor:pointer;white-space:nowrap;text-decoration:none}
+  .badge:hover{background:#1f4e7a}
+  .card p{font-size:15px;color:#2b3138;margin:3px 0}
+  .card ul{margin:5px 0 0;padding-left:2px;list-style:none}
+  .card li{font-size:15px;color:#2b3138;margin:6px 0;padding-left:16px;position:relative}
+  .card li::before{content:"";position:absolute;left:3px;top:10px;width:5px;height:5px;
+                   border-radius:50%;background:var(--accent)}
+  .card li .k{font-weight:600;color:var(--accent);margin-right:4px}
+  .lead{font-size:15.5px;color:#2b3138;line-height:1.65}
+  .lead b{color:var(--accent)}
+  /* 词汇卡 */
+  .card.terms{background:#f1f8f3;border-color:#cfe6d3}
+  .card li.term{padding-left:0;margin:11px 0}
+  .card li.term::before{display:none}
+  .tn{display:block;font-weight:700;color:#217a4b;font-size:1.03em;margin-bottom:2px}
+  .flash{animation:fl 1.4s ease}
+  @keyframes fl{0%,40%{background:var(--hl)}100%{}}
+  /* loading */
+  #load{position:absolute;left:0;right:55%;top:0;bottom:0;display:flex;align-items:center;
+        justify-content:center;flex-direction:column;gap:10px;color:var(--sub);font-size:13px;background:var(--bg)}
+  .spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--accent);
+        border-radius:50%;animation:sp 0.8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<main>
+  <div id="pdf-pane"><div id="load"><div class="spin"></div><div>正在渲染 PDF…</div></div></div>
+  <div id="resizer"></div>
+  <div id="guide-pane">
+    <div id="guide-head">
+      <h1>Nicheformer：一个把「空间上下文」装进细胞表示的单细胞+空间组学基础模型</h1>
+      <div class="en">Nicheformer: a foundation model for single-cell and spatial omics</div>
+      <div class="meta">Tejada-Lapuerta, Schaar … Theis（慕尼黑工业大学 / Helmholtz Munich）· Nature Methods 22, 2525–2538 · 2025-10-30 · <a href="https://doi.org/10.1038/s41592-025-02814-z" target="_blank">doi:10.1038/s41592-025-02814-z</a></div>
+    </div>
+    <div class="nav" id="nav"><span class="pageind" id="pageind">PDF 加载中…</span><span class="chip" id="fzminus" title="缩小讲解字号">A−</span><span class="chip" id="fzplus" title="放大讲解字号">A+</span></div>
+    <div id="guide-body"></div>
+  </div>
+</main>
+
+<script src="./vendor/pdf.min.js"></script>
+<script src="./assets/paper-data.js"></script>
+<script src="./vendor/pdf.worker.inline.js"></script>
+<script>
+/* ============ 中文速读讲解（精读后人工撰写） ============ */
+const SECTIONS = [
+ // ===== 在此填入本论文的中文速读讲解（Claude 精读后撰写） =====
+ // 每个 section = {name:"区名", items:[...]}；item.kind ∈ 'terms' | 'lead' | 'card' | 'fig'
+ //  terms 开篇核心词汇卡（绿底）: {kind:"terms", page, t:"分组名", points:[[术语名（中英）, 大白话解释], ...]}
+ //  lead  一句话核心            : {kind:"lead",  page, html:`可含 <b>加粗</b> 的 HTML`}
+ //  card  普通段落讲解          : {kind:"card",  page, t:"标题", points:[[小标签, 说明], ...]}
+ //  fig   图表讲解（黄底📊）     : {kind:"fig",   page, t:"图N", points:[[panel如"A 分图", 讲解], ...]}
+ //  page = 该内容对应的 PDF 物理页码（点右上角 📄P# 跳到左侧该页）
+ //  ⚠️ 内容里的引号一律用中文「」或弯引号 “” —— 禁用英文直双引号，否则会截断 JS 字符串
+ {name:"🔑 核心词汇（读前必看）", items:[
+   {kind:"terms", page:1, t:"研究对象与问题", points:[
+     ["解离单细胞测序（dissociated scRNA-seq）","把组织打散成单个细胞再测基因表达。优点是通量大、无偏，缺点是「打散」过程丢掉了细胞的空间位置和邻居信息。"],
+     ["空间转录组（spatial transcriptomics, ST）","在组织切片上原位测基因表达，保留每个细胞的 X/Y 坐标和邻居。但基于成像的 ST 只能测几百到几千个基因（targeted panel，靶向基因集），通量/基因覆盖受限。"],
+     ["细胞微环境 / 生态位（niche）","一个细胞周围由哪些类型细胞、按什么比例组成的局部结构（如免疫 niche、肿瘤 niche）。组织功能很大程度由 niche 决定。本文核心就是让模型学会「空间上下文」。"],
+     ["本文要解决的核心矛盾","scRNA-seq 数据多但没空间信息；ST 有空间但数据少、基因少。能不能训一个模型，从 ST 学到空间规律，再迁移到海量 scRNA-seq 数据上？——这就是 Nicheformer。"]]},
+   {kind:"terms", page:1, t:"方法与架构", points:[
+     ["基础模型（foundation model）","在海量无标注数据上自监督预训练、可适配多种下游任务的大模型（类比 NLP 的 GPT）。Nicheformer 是 transformer 架构、4930 万参数。"],
+     ["SpatialCorpus-110M","本文构建的预训练语料：1.1 亿细胞，含 5706 万解离细胞 + 5383 万空间细胞，跨人/鼠、73 个组织、4 种空间技术（MERFISH、Xenium、CosMx、ISS）。这是论文的一大资产。"],
+     ["基因排序 token 化（gene-rank tokenizer）","把一个细胞表示成「按表达量从高到低排序的基因 token 序列」（沿用 Geneformer 思路）。好处：对批次效应稳健，且不需要不同技术间表达深度匹配。"],
+     ["上下文 token（contextual tokens）","在序列里额外加入 物种/模态/技术 三种标记 token，让模型区分「这是人还是鼠、解离还是空间、MERFISH 还是 Xenium」，从而联合学习。"],
+     ["线性探测 vs 微调（linear probing vs fine-tuning）","两种用法：线性探测=冻结模型、只在嵌入上训一个线性层（看表示本身有多强）；微调=连 transformer 参数一起更新（追求最佳性能）。"]]},
+   {kind:"terms", page:4, t:"被对比的其他模型", points:[
+     ["只用解离数据的基础模型","Geneformer、scGPT、UCE——只在 scRNA-seq 上训练，不含空间信息。本文证明它们恢复不了空间微环境的复杂度。"],
+     ["CellPLM","唯一一个也用了空间数据的基础模型（本批第 5 篇），但训练数据小（900万解离+200万空间），且除基因填补外没在空间任务上微调。Nicheformer 在空间任务上系统性超过它。"],
+     ["scVI / PCA","经典嵌入基线（变分自编码器 / 主成分分析），用来对照基础模型到底强在哪。"]]},
+ ]},
+
+ {name:"📌 一句话核心", items:[
+   {kind:"lead", page:1, html:`Nicheformer 是一个 transformer 基础模型，在 <b>SpatialCorpus-110M（1.1 亿细胞，解离 scRNA-seq + 成像空间转录组各半）</b>上预训练，让细胞表示<b>捕捉到「空间上下文」</b>。核心贡献：① 证明<b>只用解离数据训练的模型恢复不了空间微环境</b>，必须多尺度联合训练；② 设计了一组新的空间下游任务（空间标签预测：细胞类型/niche/region；空间组成预测：邻域密度/组成），Nicheformer 在线性探测和微调下都系统性<b>超过 Geneformer/scGPT/UCE/CellPLM/scVI/PCA</b>；③ 最实用的能力——<b>把空间信息迁移到没有空间坐标的 scRNA-seq 数据</b>，给解离数据「补」上空间标签。`},
+ ]},
+
+ {name:"① Fig 1：模型总览", items:[
+   {kind:"fig", page:2, t:"Figure 1 · Nicheformer 架构与流程", points:[
+     ["a 预训练语料","SpatialCorpus-110M：解离 5706 万细胞（4 技术/293 数据集/49 组织/6067 供体）+ 空间 5383 万细胞（4 技术/60 数据集/15 组织）。UMAP 显示解离与空间数据有明显批次差异。"],
+     ["b 下游任务","在脑(MERFISH)、肝(CosMx)、肺(CosMx/Xenium)、结肠(Xenium)上测——空间标签预测（细胞类型/niche/region）+ 空间组成（细胞密度/邻域组成）。"],
+     ["c 基因空间","跨物种构建共享词表：拼接人鼠同源蛋白编码基因 + 物种特异基因，共 20310 个基因 token（16981 同源 + 151 鼠特异 + 3178 人特异）。"],
+     ["d token化","每个细胞→基因排序 token + 物种/模态/技术上下文 token →喂进 transformer 预测被 mask 的 token →聚合得到 Nicheformer 嵌入。"],
+     ["e 嵌入","预训练嵌入 UMAP（按模态着色）。"]]},
+   {kind:"card", page:2, t:"模型规格", points:[
+     ["架构","1500 token 上下文长度、12 层 transformer 编码器、每层 16 注意力头、FFN 1024、输出 512 维嵌入，共 4930 万参数。"],
+     ["关键消融","只用解离数据（哪怕是空间数据 3 倍量）→ 下游任务表现更差，证明解离数据单独无法捕捉空间变异；只用单物种→对缺失物种表现差。数据多样性比单纯数据量更重要。"]]},
+ ]},
+
+ {name:"② Fig 2：SpatialCorpus-110M", items:[
+   {kind:"fig", page:5, t:"Figure 2 · 预训练语料组成", points:[
+     ["a 解离部分","5706 万人鼠细胞，基于 CellXGene CENSUS（3347万）+ 额外 180 数据集（GEO/sfaira/HCA），跨 17 实体器官 + 18 细胞系。"],
+     ["b 空间部分","5383 万靶向空间细胞，4 种技术。大部分来自脑(60.46%)和肺(9.95%)；55% 未标注；含健康(64%)与癌症(32%)样本以学习肿瘤-免疫微环境。"],
+     ["c 元数据模式","用官方本体术语 ID 统一 assay/sex/organism/tissue；基因符号转 ENSEMBL ID，用 BioMart 匹配跨物种同源基因。"],
+     ["设计选择","刻意不把数据整合到统一潜空间——保留生物与技术变异，提供原始输入让用户自选归一化策略。"]]},
+ ]},
+
+ {name:"③ Fig 3：注意力的可解释性", items:[
+   {kind:"fig", page:6, t:"Figure 3 · 注意力捕捉性别二态基因", points:[
+     ["a-b 分层结构","早层注意力分散；中层尖锐聚焦特定基因（捕捉生物相关关系）；末层聚焦上下文 token。这种分层在所有组织/模态都稳健，说明学到了可泛化的层级表示。"],
+     ["注意力头专门化","部分头跨组织保持功能（如总关注高表达基因）；部分头随模态特化；类比 LLM 的 induction head。"],
+     ["c-i 性别二态","在 MERFISH 雌雄小鼠脑的 AVPV 区，第 9-10 层对性别二态基因(SDG)的最大注意力差异显著高于随机基因——少数注意力头捕捉到微妙的性别线索。且注意力差异最大的基因不一定是差异表达最大的基因（火山图），说明模型靠基因间相互作用而非单纯表达深度区分。"]]},
+ ]},
+
+ {name:"④ Fig 4：空间标签迁移（核心能力）", items:[
+   {kind:"fig", page:9, t:"Figure 4 · 把空间标签迁到未见/解离数据", points:[
+     ["b 性能","在 MERFISH 小鼠脑（17 区域+8 niche）上，微调 Nicheformer 的 macro-F1 最高，超过 PCA/scVI/Geneformer/scGPT/UCE/CellPLM。线性探测已超基线，微调进一步提升。"],
+     ["c-e 跨模态迁移","把 MERFISH 定义的细胞类型迁到 scRNA-seq 运动皮层细胞：正确选出 33 类中相关的 9 类运动皮层细胞类型，高一致、低不确定性。"],
+     ["f-g niche/region 迁移","非神经元和抑制性神经元的 niche 预测低不确定性；兴奋性亚型不确定性较高。多数细胞正确预测为 isocortex，少量溢出到相邻脑区（可能是组织切割伪影）。"],
+     ["意义","Nicheformer 用一个简单线性层就能把「空间感知的注释」从空间数据迁到解离单细胞数据——解锁了跨模态分析的新可能。"]]},
+ ]},
+
+ {name:"⑤ Fig 5：邻域组成预测", items:[
+   {kind:"fig", page:11, t:"Figure 5 · 预测邻域组成", points:[
+     ["a-b 定义","「计算邻域」= 固定半径内的细胞集合；邻域密度=细胞总数，邻域组成=各细胞类型比例。半径选取使平均含 10/20/50/100 个邻居。"],
+     ["c 性能","在脑(MERFISH)、肝/肺(CosMx)三数据集上，微调 Nicheformer 在 MAE 上系统性超过所有线性探测基线（含大量主成分的 PCA）。脑数据随邻域增大性能提升；肝因分区(zonation)结构更明显。"],
+     ["d 分细胞类型","预测最准的细胞类型恰好是 MERFISH 脑里最丰富的 8 类（结构组织性强的皮层细胞）；预测最差的 4 类在最不丰富的 14 类里——丰度与可预测性相关。"]]},
+   {kind:"card", page:11, t:"为什么邻域组成重要", points:[
+     ["生物意义","邻域组成差异显著影响基因表达、关联细胞间通讯；肿瘤微环境的细胞组成（如免疫细胞浸润）有预后价值，是癌症生存的预测因子。"]]},
+ ]},
+
+ {name:"⑥ 定位与意义", items:[
+   {kind:"lead", page:15, html:`定位：Nicheformer 是把「<b>空间</b>」这个维度正式带进单细胞基础模型的代表作，直接呼应第 1 篇 CZI 纲领文里的<b>「多细胞尺度 UR」</b>。它最有价值的论点是——<b>光靠解离数据训练的基础模型（Geneformer/scGPT/UCE）学不到空间微环境，必须把空间数据一起喂进去</b>。配套产出的 SpatialCorpus-110M（1.1 亿细胞）本身就是个重要资源。与本批第 5 篇 CellPLM（同样融空间但规模小）形成直接对照，与第 6/8 篇（Spateo/stVCR 的空间分析）在「空间」主题上互补。`},
+ ]},
+];
+
+/* ============ 渲染右侧讲解 ============ */
+const guide = document.getElementById('guide-body');
+const nav = document.getElementById('nav');
+SECTIONS.forEach((sec, si)=>{
+  const h = document.createElement('div');
+  h.className='sec-h'; h.id='sec-'+si; h.textContent=sec.name;
+  guide.appendChild(h);
+  // nav chip
+  const chip=document.createElement('span');
+  chip.className='chip'; chip.textContent=sec.name.replace(/^[^ ]+ /,'').slice(0,8);
+  chip.onclick=()=>h.scrollIntoView({behavior:'smooth',block:'start'});
+  nav.insertBefore(chip, nav.firstChild);
+  sec.items.forEach(it=>{
+    const c=document.createElement('div');
+    c.className='card'+(it.kind==='fig'?' fig':'')+(it.kind==='terms'?' terms':'');
+    if(it.kind==='lead'){ c.className='card'; c.innerHTML=`<div class="top"><div class="t">核心一句话</div><a class="badge" data-pg="${it.page}">📄 P${it.page}</a></div><div class="lead">${it.html}</div>`; }
+    else{
+      let inner=`<div class="top"><div class="t">${it.t}</div><a class="badge" data-pg="${it.page}">📄 P${it.page}</a></div>`;
+      inner+='<ul>'+it.points.map(p=> it.kind==='terms'
+        ? `<li class="term"><span class="tn">${p[0]}</span>${p[1]}</li>`
+        : `<li><span class="k">${p[0]}</span>${p[1]}</li>`).join('')+'</ul>';
+      c.innerHTML=inner;
+    }
+    guide.appendChild(c);
+  });
+});
+// 页码徽章 → 跳转左侧 PDF
+guide.addEventListener('click', e=>{
+  const b=e.target.closest('.badge'); if(!b) return;
+  const n=b.dataset.pg; const el=document.getElementById('pg-'+n);
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+});
+
+/* ============ 渲染 PDF（PDF.js，本地、离线） ============ */
+const pane=document.getElementById('pdf-pane');
+const pageind=document.getElementById('pageind');
+let pdfDoc=null, pageEls=[];
+
+function b64ToBytes(b64){
+  const bin=atob(b64); const len=bin.length; const bytes=new Uint8Array(len);
+  for(let i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes;
+}
+
+async function renderAll(){
+  // file:// 下用 blob URL 创建同源 worker（绕开本地 worker 安全限制）
+  const wblob=new Blob([window.PDF_WORKER_CODE],{type:'application/javascript'});
+  pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(wblob);
+  const bytes=b64ToBytes(window.PDF_B64);
+  pdfDoc=await pdfjsLib.getDocument({data:bytes}).promise;
+  document.getElementById('load')?.remove();
+  pane.innerHTML='';
+  pageEls=[];
+  const dpr=Math.min(window.devicePixelRatio||1, 2.5);
+  const paneW=pane.clientWidth*0.96-2;
+  for(let n=1;n<=pdfDoc.numPages;n++){
+    const page=await pdfDoc.getPage(n);
+    const base=page.getViewport({scale:1});
+    const scale=paneW/base.width;
+    const vp=page.getViewport({scale});
+    const wrap=document.createElement('div'); wrap.className='pg'; wrap.id='pg-'+n;
+    const cv=document.createElement('canvas');
+    cv.width=Math.floor(vp.width*dpr); cv.height=Math.floor(vp.height*dpr);
+    const tag=document.createElement('div'); tag.className='pgnum'; tag.textContent='P'+n;
+    wrap.appendChild(cv); wrap.appendChild(tag); pane.appendChild(wrap);
+    pageEls.push(wrap);
+    await page.render({canvasContext:cv.getContext('2d'), viewport:vp,
+                       transform:dpr!==1?[dpr,0,0,dpr,0,0]:null}).promise;
+    pageind.textContent=`第 ${n}/${pdfDoc.numPages} 页`;
+  }
+  pageind.textContent=`共 ${pdfDoc.numPages} 页 · 点右侧 📄P# 跳转`;
+  trackPage();
+}
+// 滚动时更新"当前页"
+function trackPage(){
+  pane.addEventListener('scroll', ()=>{
+    const mid=pane.scrollTop+pane.clientHeight*0.35;
+    let cur=1;
+    for(let i=0;i<pageEls.length;i++){ if(pageEls[i].offsetTop<=mid) cur=i+1; }
+    pageind.textContent=`第 ${cur}/${pdfDoc.numPages} 页`;
+  });
+}
+renderAll().catch(err=>{
+  const l=document.getElementById('load');
+  if(l) l.innerHTML='<div style="color:#b00;font-size:13px;padding:20px;text-align:center">PDF 渲染失败：'+err.message+'<br><br>请用 Chrome 打开本文件夹下的 index.html。</div>';
+  console.error(err);
+});
+
+/* ============ 可拖动分隔条 ============ */
+const rz=document.getElementById('resizer');
+let drag=false;
+rz.addEventListener('mousedown',()=>{drag=true;document.body.style.userSelect='none';});
+window.addEventListener('mouseup',()=>{
+  if(drag){drag=false;document.body.style.userSelect='';
+    clearTimeout(window._rt); window._rt=setTimeout(renderAll,150);} // 重渲染保清晰
+});
+window.addEventListener('mousemove',e=>{
+  if(!drag) return;
+  const pct=Math.min(75,Math.max(30, e.clientX/window.innerWidth*100));
+  document.getElementById('pdf-pane').style.width=pct+'%';
+});
+
+/* ============ 讲解区字号缩放（A− / A+，本地记忆） ============ */
+(function(){
+  const gp=document.getElementById('guide-body');
+  let z=parseFloat(localStorage.getItem('paperGZ')||'1');
+  const apply=()=>{gp.style.zoom=z; localStorage.setItem('paperGZ',z);};
+  apply();
+  document.getElementById('fzminus').onclick=()=>{z=Math.max(0.8,Math.round((z-0.1)*10)/10);apply();};
+  document.getElementById('fzplus').onclick=()=>{z=Math.min(1.7,Math.round((z+0.1)*10)/10);apply();};
+})();
+</script>
+</body>
+</html>

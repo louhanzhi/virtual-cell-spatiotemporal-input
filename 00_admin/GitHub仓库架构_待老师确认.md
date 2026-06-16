@@ -1,39 +1,39 @@
-# 论文资料 GitHub 仓库架构（提交确认稿）
+# 论文资料 GitHub 仓库架构（已按蒋恒批注修订）
 
 **项目**：虚拟细胞的时空数据 input（perspective 观点综述）
-**用途**：将与本论文相关的全部材料纳入版本管理——外部文献、会议转录、团队思考与讨论、草稿与补充阅读、笔记摘要、投稿等。
-**说明**：以下为拟定的仓库目录结构，请老师审阅确认或提出调整意见。
+**用途**：将与本论文相关的全部材料纳入版本管理——外部文献、会议材料、团队思考与讨论、草稿、笔记、投稿等。
+**状态**：以下为**已落地**的目录结构（按蒋恒批注调整后）。
 
 ---
 
-## 一、目录结构
+## 一、目录结构（现行）
 
 ```
 virtual-cell-spatiotemporal-input/
 ├── README.md                  # 仓库地图：各目录用途、论文进度、命名约定
 ├── .gitignore
 │
-├── 01_literature/             # 外部文献（引用的 + 补充阅读的）
-│   ├── papers/                # PDF 原文
-│   │   ├── core/              # 必读核心文献
-│   │   └── supplementary/     # 补充与选读文献
-│   ├── notes/                 # 每篇一份阅读笔记，文件名与 PDF 对应
-│   ├── speed-reading/         # 速读网页（每篇一个文件夹，浏览器打开即用）
-│   ├── reading-list.md        # 阅读清单 + 阅读状态追踪
-│   └── references.bib         # 统一文献源（BibTeX），写作时直接引用
+├── 01_literature/             # 外部文献 —— 按论文聚合，一篇一文件夹
+│   ├── 001-VirtualCell/       # 编号按 core 优先级排（001–005 core，006–013 supp）
+│   │   ├── paper.pdf          #   原文（统一命名 paper.pdf）
+│   │   ├── notes.md           #   本篇阅读笔记
+│   │   ├── speed-reading/     #   本篇速读网页（浏览器打开 index.html）
+│   │   └── README.md          #   引用信息 + 优先级 + 在文中的角色
+│   ├── 002-Nicheformer/  …  013-SubcellularST-Benchmark/
+│   ├── reading-list.md        # 总览：阅读清单 + 状态
+│   └── references.bib         # 统一文献源（BibTeX）
 │
-├── 02_meetings/               # 会议转录材料
-│   ├── transcripts/           # 原始转录，按日期命名
-│   └── summaries/             # 会议纪要 / 要点 / 决议
+├── 02_meetings/               # 会议材料 —— 按会议一文件夹（日期命名），原始与纪要同放
+│   └── 2026-06-15_meeting_虚拟酵母FM_会议记录及ppt/
 │
-├── 03_discussions/            # 团队的综合思考与讨论（创意与产出）
-│   ├── ideas/                 # 想法、论证草稿、灵感
-│   ├── decisions/             # 重要决策记录（结论与理由）
-│   └── open-questions/        # 待确认 / 悬而未决的问题
+├── 03_discussions/            # 团队内部思考与讨论 —— 平铺，不再细分
 │
-├── 04_drafts/                 # 论文草稿
-│   ├── outline.md             # 论文骨架（章节结构与字数配比）
-│   └── versions/              # v1, v2… 版本留存
+├── 04_drafts/                 # 论文草稿 —— 只有 versions/，每版自带 outline
+│   ├── README.md
+│   └── versions/
+│       └── v1/
+│           ├── outline.md     # 本版骨架
+│           └── draft.md       # 本版正文
 │
 ├── 05_assets/                 # 自制图表、规格清单等素材
 │
@@ -42,36 +42,28 @@ virtual-cell-spatiotemporal-input/
 
 ---
 
-## 二、分类边界说明
+## 二、按蒋恒批注做的修改
 
-1. **"外部引用文献"与"补充阅读文献"统一存放**，都放入 `01_literature/papers/`。
-   理由：某篇文献"是否最终被引用"在写作过程中会变化，不宜用目录硬性区分；
-   实际引用状态通过 `references.bib` 与 `reading-list.md` 追踪。
-   `papers/` 下按 **core（必读核心）** 与 **supplementary（补充选读）** 分优先级。
+1. **`01_literature/` 改为按论文聚合**（最大改动）。
+   原方案把 papers/core、papers/supplementary、notes/、speed-reading/ 横向拆开，嵌套过深、且同一篇论文的材料散在多处。
+   现改为**一篇一文件夹**（`001-paper名称/`、`002-paper名称/` …），该篇的 PDF、笔记、速读、引用信息全部收在自己文件夹里。
+   编号按 core 优先级排：001–005 为 core，006–013 为 supplementary；优先级写在每个文件夹的 `README.md`，不再用目录层级表达。
 
-2. **笔记分两类**：
-   - 针对单篇论文的阅读笔记 → `01_literature/notes/`（文件名与对应 PDF 一致）
-   - 跨多篇的综合思考 / 自己的观点 → `03_discussions/ideas/`
-   区分标准：是在转述他人，还是在产出我们自己的观点。
+2. **`02_meetings/` 拍平**：去掉 transcripts/ 与 summaries/ 两个子层，改为按会议一文件夹（日期命名），原始转录与纪要同放。
 
-3. **会议材料分原始与加工**：原始转录入 `02_meetings/transcripts/`；
-   人工整理的纪要、要点、决议入 `02_meetings/summaries/`。
+3. **`03_discussions/` 拍平**：去掉 ideas/decisions/open-questions——"我们自己内部的不用分这么细"。
+
+4. **`04_drafts/` 简化**：去掉顶层 `outline.md`；只保留 `versions/`，**每个 version 文件夹自带对应的 `outline.md` 与 `draft.md`**，骨架与草稿绑定，不会脱节。
 
 ---
 
 ## 三、命名与协作约定
 
-- **文献文件名**：`年份_第一作者_关键词`，如 `2024_Bunne_VirtualCell.pdf`。
-- **会议与草稿**：日期前缀，如 `2026-06-15_meeting.md`、`2026-06-15_draft_v2.md`。
-- **文献管理**：建立 `references.bib`（BibTeX），配合 Zotero 等工具维护，
-  便于协作引用与最终核对引用准确性。
+- **文献文件夹**：`编号-关键词`（如 `001-VirtualCell`），内部 PDF 统一名为 `paper.pdf`。
+- **会议文件夹**：日期前缀（如 `2026-06-15_meeting_xxx`）。
+- **草稿版本**：`versions/v1`、`versions/v2`…，每版含自己的 `outline.md` 与 `draft.md`。
+- **文献管理**：以 `references.bib`（BibTeX）为引用源，配合 Zotero 维护；引用/阅读状态在 `reading-list.md` 追踪。
 
-## 四、请老师确认的事项
+## 四、仓库公开性
 
-1. **仓库公开性**：建议设为 **private**。
-   若设 public，则版权论文 PDF 不宜入库（存在侵权风险），
-   可改为仅存"引用信息 + 链接 + 自撰笔记"。请老师指示采用哪种方式。
-   → 现已按 private 创建。
-2. 目录结构是否需要增删或合并层级。
-3. 文献的 core / supplementary 优先级划分是否需要调整。
-4. 是否需要纳入其他类型材料（如数据集、代码、图表源文件）。
+设为 **private**（含版权 PDF 原文）。若日后改 public，需把 PDF 与速读内联材料移出版本库或加入 `.gitignore`（见 `.gitignore` 内注释）。

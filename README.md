@@ -12,12 +12,14 @@
 
 | 目录 | 用途 |
 |---|---|
-| [`01_literature/`](01_literature/) | 外部文献：PDF 原文（core/supplementary）、逐篇阅读笔记、速读网页、`reading-list.md`、`references.bib` |
-| [`02_meetings/`](02_meetings/) | 会议转录（transcripts）与人工纪要（summaries） |
-| [`03_discussions/`](03_discussions/) | 团队的综合思考与讨论：ideas / decisions / open-questions |
-| [`04_drafts/`](04_drafts/) | 论文草稿：`outline.md` 骨架 + `versions/` 版本留存 |
+| [`01_literature/`](01_literature/) | 外部文献，**按论文一文件夹**（`001-xxx/` … `013-xxx/`，core 优先级在前），每个文件夹内含 `paper.pdf` + `notes.md` + `speed-reading/` + `README.md`（引用信息与优先级）。另有总览 `reading-list.md`、`references.bib` |
+| [`02_meetings/`](02_meetings/) | 会议材料，**按会议一文件夹**（日期命名），原始转录与纪要同放，不再拆 transcripts/summaries |
+| [`03_discussions/`](03_discussions/) | 团队内部的思考与讨论，**平铺**，不再细分 ideas/decisions/open-questions |
+| [`04_drafts/`](04_drafts/) | 论文草稿：只有 `versions/`，**每个版本文件夹自带 `outline.md` + `draft.md`** |
 | [`05_assets/`](05_assets/) | 自制图表、规格清单等素材 |
 | [`00_admin/`](00_admin/) | 任务清单、与老师沟通记录、作业/投稿要求 |
+
+> 结构按蒋恒批注调整：literature 改为按论文聚合（一篇一文件夹）；meetings / discussions 拍平；drafts 每版自带 outline。
 
 ## 论文进度
 
@@ -28,10 +30,11 @@
 - [ ] 4. 测量端硬约束：三难困境（~300 字）
 - [ ] 5. 结论 / 展望（~150 字）
 
-骨架见 [`04_drafts/outline.md`](04_drafts/outline.md)。
+骨架见 [`04_drafts/versions/v1/outline.md`](04_drafts/versions/v1/outline.md)。
 
 ## 命名约定
 
-- **文献文件名**：`年份_第一作者_关键词.pdf`（如 `2024_Bunne_VirtualCell.pdf`）
-- **会议与草稿**：日期前缀（如 `2026-06-15_meeting.md`、`2026-06-15_draft_v2.md`）
-- **文献管理**：以 [`references.bib`](01_literature/references.bib)（BibTeX）为引用源；引用状态在 [`reading-list.md`](01_literature/reading-list.md) 追踪。
+- **文献文件夹**：`编号-关键词`（如 `001-VirtualCell`），内部 PDF 统一名为 `paper.pdf`；编号按 core 优先级排（001–005 core，006–013 supplementary）
+- **会议文件夹**：日期前缀（如 `2026-06-15_meeting_xxx`）
+- **草稿版本**：`versions/v1`、`versions/v2`…，每版含自己的 `outline.md` 与 `draft.md`
+- **文献管理**：以 [`references.bib`](01_literature/references.bib)（BibTeX）为引用源；引用/阅读状态在 [`reading-list.md`](01_literature/reading-list.md) 追踪。

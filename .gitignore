@@ -15,8 +15,8 @@ _render_check.png
 *.bib.bak
 .zotero/
 
-# 注意：本仓库为 private，PDF 原文与速读网页（含内联 base64）有意纳入版本库。
-# 若日后改为 public，请取消下面注释以排除版权材料：
-# 01_literature/papers/
-# 01_literature/speed-reading/**/assets/paper.pdf
+# PDF 原文不纳入版本库（仅保留在本地）
+*.pdf
+
+# 速读网页内联 base64 大文件，如需排除可取消注释：
 # 01_literature/speed-reading/**/assets/paper-data.js

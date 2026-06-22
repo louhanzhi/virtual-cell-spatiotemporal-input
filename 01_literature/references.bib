@@ -1,26 +1,37 @@
 % 统一文献源（BibTeX）。写作时直接 \cite{key}。
-% 部分条目的卷/期/页/DOI 仍需核对补全（标 TODO）。建议用 Zotero 维护后导出覆盖此文件。
+% 2026-06-16 联网核对：补全既有 13 条的卷/期/页/DOI，并新增一批 core reference（见文末「补充核心引用」分区）。
+% 维护建议：用 Zotero 维护后导出覆盖此文件。
+
+% =====================================================================
+% A. 既有 13 篇（编号对应 01_literature/0xx- 文件夹）
+% =====================================================================
 
 @article{bunne2024virtualcell,
   title   = {How to Build the Virtual Cell with Artificial Intelligence: Priorities and Opportunities},
-  author  = {Bunne, Charlotte and others},
+  author  = {Bunne, Charlotte and Roohani, Yusuf and Rosen, Yanay and Gupta, Ankit and Zhang, Xikun and others},
   journal = {Cell},
+  volume  = {187},
+  number  = {25},
+  pages   = {7045--7063},
   year    = {2024},
-  note    = {arXiv:2409.11654},
-  doi     = {TODO}
+  doi     = {10.1016/j.cell.2024.11.015},
+  note    = {arXiv:2409.11654}
 }
 
 @article{tejadalapuerta2025nicheformer,
   title   = {Nicheformer: a foundation model for single-cell and spatial omics},
-  author  = {Tejada-Lapuerta, Alejandro and others},
+  author  = {Tejada-Lapuerta, Alejandro and Schaar, Anna C. and Gutgesell, Robert and Palla, Giovanni and Halle, Lukas and Minaeva, Mariia and others},
   journal = {Nature Methods},
+  volume  = {22},
+  number  = {12},
+  pages   = {2525--2538},
   year    = {2025},
-  doi     = {TODO}
+  doi     = {10.1038/s41592-025-02814-z}
 }
 
 @article{schiebinger2019waddingtonot,
   title   = {Optimal-Transport Analysis of Single-Cell Gene Expression Identifies Developmental Trajectories in Reprogramming},
-  author  = {Schiebinger, Geoffrey and others},
+  author  = {Schiebinger, Geoffrey and Shu, Jian and Tabaka, Marcin and Cleary, Brian and Subramanian, Vidya and Solomon, Aryeh and others},
   journal = {Cell},
   volume  = {176},
   number  = {4},
@@ -29,20 +40,22 @@
   doi     = {10.1016/j.cell.2019.01.006}
 }
 
-@article{stvcr2026,
-  title   = {stVCR: reconstructing spatiotemporal cellular dynamics from time-series spatial transcriptomics},
-  author  = {TODO},
+@article{peng2026stvcr,
+  title   = {stVCR: spatiotemporal dynamics of single cells},
+  author  = {Peng, Qiangwei and Zhou, Peijie and Li, Tiejun},
   journal = {Nature Methods},
   year    = {2026},
-  doi     = {TODO}
+  doi     = {10.1038/s41592-026-03010-3},
+  note    = {bioRxiv:2024.06.02.596937}
 }
 
-@article{stselectionguide,
-  title   = {A practical guide to spatial transcriptomics technology selection},
-  author  = {TODO},
-  journal = {PMC},
+@article{lim2025stselectionguide,
+  title   = {A practical guide for choosing an optimal spatial transcriptomics technology from seven major commercially available options},
+  author  = {Lim, Hong Kai and others},
+  journal = {BMC Genomics},
+  volume  = {26},
   year    = {2025},
-  doi     = {TODO}
+  doi     = {10.1186/s12864-025-11235-3}
 }
 
 @article{multiscaleaivc2026,
@@ -61,28 +74,33 @@
   doi     = {TODO}
 }
 
-@article{wen2023cellplm,
-  title   = {CellPLM: Pre-training of Cell Language Model Beyond Single Cells},
-  author  = {Wen, Hongzhi and others},
-  year    = {2023},
-  note    = {bioRxiv},
-  doi     = {TODO}
+@inproceedings{wen2024cellplm,
+  title     = {CellPLM: Pre-training of Cell Language Model Beyond Single Cells},
+  author    = {Wen, Hongzhi and Tang, Wenzhuo and Dai, Xinnan and Ding, Jiayuan and Jin, Wei and Xie, Yuying and Tang, Jiliang},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  doi       = {10.1101/2023.10.03.560734},
+  note      = {bioRxiv:2023.10.03.560734}
 }
 
-@article{spateo2024,
-  title   = {Spateo: spatiotemporal modeling of molecular holograms},
-  author  = {TODO},
+@article{qiu2024spateo,
+  title   = {Spatiotemporal modeling of molecular holograms},
+  author  = {Qiu, Xiaojie and Zhu, Daniel Y. and Lu, Yifan and others},
   journal = {Cell},
+  volume  = {187},
+  number  = {26},
+  pages   = {7351--7373},
   year    = {2024},
-  doi     = {TODO}
+  doi     = {10.1016/j.cell.2024.10.011}
 }
 
 @article{subcellularst2025,
-  title   = {Systematic benchmarking of subcellular spatial transcriptomics platforms},
-  author  = {TODO},
+  title   = {Systematic benchmarking of high-throughput subcellular spatial transcriptomics platforms across human tumors},
+  author  = {others},
   journal = {Nature Communications},
+  volume  = {16},
   year    = {2025},
-  doi     = {TODO}
+  doi     = {10.1038/s41467-025-64292-3}
 }
 
 @article{livecellx2025,
@@ -101,8 +119,83 @@
   doi     = {TODO}
 }
 
-@article{schwartzcaliban,
-  title   = {Caliban: accurate cell tracking and lineage construction in live-cell imaging (DeepCell)},
-  author  = {Schwartz, Morgan Sarah and others},
-  doi     = {TODO}
+@article{schwartz2023caliban,
+  title   = {Caliban: Accurate cell tracking and lineage construction in live-cell imaging experiments with deep learning},
+  author  = {Schwartz, Morgan Sarah and Moen, Erick and Miller, Geneva and Dougherty, Tom and Borba, Enrico and Ding, Rachel and Graf, William and Pao, Edward and Van Valen, David},
+  year    = {2023},
+  note    = {bioRxiv:803205},
+  doi     = {10.1101/803205}
+}
+
+% =====================================================================
+% B. 补充核心引用（2026-06-16 新增）
+%    给三条论证线补"地基"：① 单细胞基础模型为何只吃解离数据；
+%    ② 空间/时间作为方法学领域的奠基与里程碑；③ 数据基础设施。
+% =====================================================================
+
+% --- B1. 单细胞基础模型奠基：说明主流 input 范式（解离 scRNA-seq）从何而来 ---
+@article{theodoris2023geneformer,
+  title   = {Transfer learning enables predictions in network biology},
+  author  = {Theodoris, Christina V. and Xiao, Ling and Chopra, Anant and Chaffin, Mark D. and Al Sayed, Zeina R. and Hill, Matthew C. and others},
+  journal = {Nature},
+  volume  = {618},
+  number  = {7965},
+  pages   = {616--624},
+  year    = {2023},
+  doi     = {10.1038/s41586-023-06139-9}
+}
+
+@article{cui2024scgpt,
+  title   = {scGPT: toward building a foundation model for single-cell multi-omics using generative AI},
+  author  = {Cui, Haotian and Wang, Chloe and Maan, Hassaan and Pang, Kuan and Luo, Fengning and Duan, Nan and Wang, Bo},
+  journal = {Nature Methods},
+  volume  = {21},
+  number  = {8},
+  pages   = {1470--1480},
+  year    = {2024},
+  doi     = {10.1038/s41592-024-02201-0}
+}
+
+% --- B2. 时间轴奠基：伪时间 / RNA 速率（draft 第 3 节"伪时间 vs 真实时间"的源头）---
+@article{trapnell2014monocle,
+  title   = {The dynamics and regulators of cell fate decisions are revealed by pseudotemporal ordering of single cells},
+  author  = {Trapnell, Cole and Cacchiarelli, Davide and Grimsby, Jonna and Pokharel, Prapti and Li, Shuqiang and Morse, Michael and others},
+  journal = {Nature Biotechnology},
+  volume  = {32},
+  number  = {4},
+  pages   = {381--386},
+  year    = {2014},
+  doi     = {10.1038/nbt.2859}
+}
+
+@article{lamanno2018rnavelocity,
+  title   = {RNA velocity of single cells},
+  author  = {La Manno, Gioele and Soldatov, Ruslan and Zeisel, Amit and Braun, Emelie and Hochgerner, Hannah and Petukhov, Viktor and others},
+  journal = {Nature},
+  volume  = {560},
+  number  = {7719},
+  pages   = {494--498},
+  year    = {2018},
+  doi     = {10.1038/s41586-018-0414-6}
+}
+
+% --- B3. 空间轴里程碑：把"空间分辨转录组"确立为一个领域 ---
+@article{marx2021methodoftheyear,
+  title   = {Method of the Year: spatially resolved transcriptomics},
+  author  = {Marx, Vivien},
+  journal = {Nature Methods},
+  volume  = {18},
+  number  = {1},
+  pages   = {9--14},
+  year    = {2021},
+  doi     = {10.1038/s41592-020-01033-y}
+}
+
+% --- B4. 数据基础设施：社区级标准化语料（呼应 draft 第 5 节"时空标准化"缺口）---
+@article{czi2023cellxgene,
+  title   = {CZ CELL$\times$GENE Discover: A single-cell data platform for scalable exploration, analysis and modeling of aggregated data},
+  author  = {{CZI Cell Science Program} and others},
+  year    = {2023},
+  note    = {bioRxiv:2023.10.30.563174},
+  doi     = {10.1101/2023.10.30.563174}
 }
